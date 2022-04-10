@@ -1,3 +1,13 @@
+# CEA DJI Controller
+
+## SDK Key
+To connect to SDK, create file res/values/api-keys.xml containing:
+```xml
+<resources>
+    <string name="dji_api_key">API_KEY_HERE</string>
+</resources>
+```
+
 # DJI Mobile SDK for Android Latest Version 4.16.1
 
 ## What Is This?
