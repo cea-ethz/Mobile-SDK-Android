@@ -91,6 +91,15 @@ public class DemoListView extends FrameLayout {
 
         // Build model for ListView
         ListItem.ListBuilder builder = new ListItem.ListBuilder();
+        builder.addGroup(R.string.component_listview_common,
+                false,
+                new GroupItem(R.string.flight_controller_listview_compass_calibration,
+                        CompassCalibrationView.class),
+                new GroupItem(R.string.flight_controller_listview_orientation_mode, OrientationModeView.class),
+                new GroupItem(R.string.flight_controller_listview_virtual_stick, VirtualStickView.class),
+                new GroupItem(R.string.camera_listview_shoot_single_photo, ShootSinglePhotoView.class),
+                new GroupItem(R.string.gimbal_listview_gimbal_capability, GimbalCapabilityView.class));
+
         builder.addGroup(R.string.component_listview_sdk_4_16,
                 false,
                 new GroupItem(R.string.look_at_mission, LookAtMissionView.class));

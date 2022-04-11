@@ -72,6 +72,7 @@
     <string name="component_listview_redirect_go_failure">Cannot redirect to DJI Go, Please check if DJI Go has installed</string>
 
     <string name="component_listview_key_manager">KeyManager</string>
+    <string name="component_listview_common">Common</string>
 
     <!-- KeyManager list-->
     <string name="key_manager_listview_key_Interface">Key Manager View</string>
