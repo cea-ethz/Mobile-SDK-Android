@@ -6,14 +6,15 @@
 
     <RelativeLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
         android:orientation="vertical">
 
         <FrameLayout
             android:id="@+id/video_feed_frame"
             android:layout_width="360dp"
             android:layout_height="202dp"
-            android:layout_centerHorizontal="true">
+            android:layout_centerHorizontal="true"
+            android:layout_marginTop="10dp">
 
             <com.dji.sdk.sample.internal.utils.VideoFeedView
                 android:id="@+id/primary_video_feed"
@@ -29,11 +30,61 @@
                 android:visibility="visible"/>
         </FrameLayout>
 
+        <ScrollView
+            android:id="@+id/lm_list_scroll"
+            android:layout_width="200dp"
+            android:layout_height="300dp"
+            android:layout_below="@+id/video_feed_frame"
+            android:layout_alignRight="@+id/video_feed_frame"
+            android:layout_marginLeft="5dp"
+            android:layout_marginTop="10dp"
+            android:layout_marginRight="5dp"
+            android:borderColor='#000000'
+            android:scrollbars="vertical">
+
+            <TextView
+                android:id="@+id/lm_list_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:scrollbars="vertical"
+                android:textColor="@color/black" />
+
+        </ScrollView>
+
+        <TextView
+            android:id="@+id/text_velocity"
+            android:layout_width="wrap_content"
+            android:layout_height="50dp"
+            android:layout_below="@+id/video_feed_frame"
+            android:layout_alignLeft="@+id/video_feed_frame"
+            android:layout_toLeftOf="@+id/lm_list_scroll"
+            android:layout_marginTop="10dp"
+            />
+        <TextView
+            android:id="@+id/text_position_estimated"
+            android:layout_width="wrap_content"
+            android:layout_height="50dp"
+            android:layout_below="@+id/text_velocity"
+            android:layout_alignLeft="@+id/video_feed_frame"
+            android:layout_toLeftOf="@+id/lm_list_scroll"
+            android:layout_marginTop="10dp"
+            />
+        <TextView
+            android:id="@+id/text_position_gps"
+            android:layout_width="wrap_content"
+            android:layout_height="50dp"
+            android:layout_below="@+id/text_position_estimated"
+            android:layout_alignLeft="@+id/video_feed_frame"
+            android:layout_toLeftOf="@+id/lm_list_scroll"
+            android:layout_marginTop="10dp"
+            />
+
         <Button
             android:id="@+id/btn_enable_virtual_stick"
             android:layout_centerHorizontal="true"
             android:layout_alignParentBottom="true"
             android:layout_marginRight="10dp"
+            android:layout_marginBottom="10dp"
             android:layout_toLeftOf="@id/btn_disable_virtual_stick"
             android:text="Enable Virtual Stick"
             style="@style/common_button"/>
@@ -41,21 +92,22 @@
         <Button
             android:id="@+id/btn_disable_virtual_stick"
             android:layout_centerHorizontal="true"
+            android:layout_marginBottom="10dp"
             android:layout_alignParentBottom="true"
             android:text="Disable Virtual Stick"
             style="@style/common_button"/>
 
         <Button
             android:id="@+id/btn_take_off"
-
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Take Off"
             android:layout_marginLeft="10dp"
-            style="@style/common_button"
+            android:layout_marginBottom="10dp"
             android:layout_alignParentBottom="true"
             android:layout_toRightOf="@+id/btn_disable_virtual_stick"
-            android:layout_marginTop="10dp"/>
+            android:layout_marginTop="10dp"
+            style="@style/common_button"/>
 
         <Button
             android:id="@+id/btn_vstick_land"

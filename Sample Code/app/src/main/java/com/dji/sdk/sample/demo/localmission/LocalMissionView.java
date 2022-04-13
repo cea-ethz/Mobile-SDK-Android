@@ -10,10 +10,12 @@ import android.widget.RelativeLayout;
 import androidx.annotation.NonNull;
 
 import com.dji.sdk.sample.R;
+import com.dji.sdk.sample.demo.flightcontroller.VirtualStickView;
 import com.dji.sdk.sample.internal.controller.DJISampleApplication;
 import com.dji.sdk.sample.internal.utils.ModuleVerificationUtil;
 import com.dji.sdk.sample.internal.view.PresentableView;
 
+import java.util.Timer;
 import java.util.TimerTask;
 
 import ch.ethz.cea.dca.*;
@@ -34,9 +36,34 @@ public class LocalMissionView extends RelativeLayout
     private float yaw;
     private float throttle;
 
+    private Timer sendVirtualStickDataTimer;
+    private SendVirtualStickDataTask sendVirtualStickDataTask;
+
     public LocalMissionView(Context context) {
         super(context);
         init(context);
+    }
+
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        setUpListeners();
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        if (null != sendVirtualStickDataTimer) {
+            if (sendVirtualStickDataTask != null) {
+                sendVirtualStickDataTask.cancel();
+
+            }
+            sendVirtualStickDataTimer.cancel();
+            sendVirtualStickDataTimer.purge();
+            sendVirtualStickDataTimer = null;
+            sendVirtualStickDataTask = null;
+        }
+        tearDownListeners();
+        super.onDetachedFromWindow();
     }
 
     private void init(Context context) {
@@ -47,6 +74,17 @@ public class LocalMissionView extends RelativeLayout
 
         //initAllKeys();
         //initUI();
+    }
+
+    private void setUpListeners() {
+        // To Include
+        // - Velocity
+        // - Estimated position
+        // - Recorded GPS
+    }
+
+    private void tearDownListeners() {
+
     }
 
     @Override
