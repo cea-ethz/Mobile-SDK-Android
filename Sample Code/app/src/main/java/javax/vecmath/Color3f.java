@@ -111,28 +111,28 @@ public class Color3f extends Tuple3f implements Serializable {
      *
      * @param color awt color
      */
-    public Color3f(java.awt.Color color) {
-        x = ((float)color.getRed())/255;
-        y = ((float)color.getGreen())/255;
-        z = ((float)color.getBlue())/255;
-    }
+//    public Color3f(java.awt.Color color) {
+//        x = ((float)color.getRed())/255;
+//        y = ((float)color.getGreen())/255;
+//        z = ((float)color.getBlue())/255;
+//    }
 
     /**
      * Sets color from awt.Color.
      * @param color awt color
      */
-    public final void set(java.awt.Color color) {
-        x = ((float)color.getRed())/255;
-        y = ((float)color.getGreen())/255;
-        z = ((float)color.getBlue())/255;
-    }
+//    public final void set(java.awt.Color color) {
+//        x = ((float)color.getRed())/255;
+//        y = ((float)color.getGreen())/255;
+//        z = ((float)color.getBlue())/255;
+//    }
      
     /**
      * Gets awt.Color.
      *
      * @return color awt color
      */
-    public final java.awt.Color get() {
-        return new java.awt.Color(x, y, z);
-    }
+//    public final java.awt.Color get() {
+//        return new java.awt.Color(x, y, z);
+//    }
 }

@@ -102,28 +102,28 @@ public class Color3b extends Tuple3b implements Serializable {
      *
      * @param color awt color
      */
-    public Color3b(java.awt.Color color) {
-        x = (byte)color.getRed();
-        y = (byte)color.getGreen();
-        z = (byte)color.getBlue();
-    }
+//    public Color3b(java.awt.Color color) {
+//        x = (byte)color.getRed();
+//        y = (byte)color.getGreen();
+//        z = (byte)color.getBlue();
+//    }
 
     /**
      * Sets color from awt.Color.
      * @param color awt color
      */
-    public final void set(java.awt.Color color) {
-        x = (byte)color.getRed();
-        y = (byte)color.getGreen();
-        z = (byte)color.getBlue();
-    }
+//    public final void set(java.awt.Color color) {
+//        x = (byte)color.getRed();
+//        y = (byte)color.getGreen();
+//        z = (byte)color.getBlue();
+//    }
      
     /**
      * Gets awt.Color.
      *
      * @return color awt color
      */
-    public final java.awt.Color get() {
-        return new java.awt.Color(x, y, z);
-    }
+//    public final java.awt.Color get() {
+//        return new java.awt.Color(x, y, z);
+//    }
 }
