@@ -70,5 +70,8 @@ Thumbs.db
 # Import summary file
 import-summary.txt
 
-
+# External API Keys
 api-keys.xml
+
+# Library Binaries
+jniLibs/
