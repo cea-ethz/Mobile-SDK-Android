@@ -131,6 +131,7 @@
     <string name="flight_controller_subtitle_intelligent_flight_assistant">Intelligent Flight Assistant</string>
     <string name="flight_controller_listview_intelligent_flight_assistant">Intelligent Flight Assistant</string>
     <string name="flight_controller_listview_networkRTK">Network RTK</string>
+    <string name="flight_controller_listview_local_mission">Local Mission</string>
 
 
 

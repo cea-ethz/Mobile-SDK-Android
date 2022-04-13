@@ -63,6 +63,8 @@ import com.dji.sdk.sample.internal.model.GroupItem;
 import com.dji.sdk.sample.internal.model.ListItem;
 import com.squareup.otto.Subscribe;
 
+import ch.ethz.cea.dca.LocalMissionView;
+
 /**
  * This view is in charge of showing all the demos in a list.
  */
@@ -93,6 +95,8 @@ public class DemoListView extends FrameLayout {
         ListItem.ListBuilder builder = new ListItem.ListBuilder();
         builder.addGroup(R.string.component_listview_common,
                 false,
+                new GroupItem(R.string.flight_controller_listview_local_mission,
+                        LocalMissionView.class),
                 new GroupItem(R.string.flight_controller_listview_compass_calibration,
                         CompassCalibrationView.class),
                 new GroupItem(R.string.flight_controller_listview_orientation_mode, OrientationModeView.class),
