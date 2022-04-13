@@ -31,7 +31,7 @@ public class LocalMissionView extends RelativeLayout
 
 
         LayoutInflater layoutInflater = (LayoutInflater) context.getSystemService(Service.LAYOUT_INFLATER_SERVICE);
-        layoutInflater.inflate(R.layout.view_virtual_stick, this, true);
+        layoutInflater.inflate(R.layout.view_local_mission, this, true);
 
         //initAllKeys();
         //initUI();
