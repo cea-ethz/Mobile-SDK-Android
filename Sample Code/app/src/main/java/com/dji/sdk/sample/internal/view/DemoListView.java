@@ -63,7 +63,7 @@ import com.dji.sdk.sample.internal.model.GroupItem;
 import com.dji.sdk.sample.internal.model.ListItem;
 import com.squareup.otto.Subscribe;
 
-import ch.ethz.cea.dca.LocalMissionView;
+import com.dji.sdk.sample.demo.localmission.LocalMissionView;
 
 /**
  * This view is in charge of showing all the demos in a list.

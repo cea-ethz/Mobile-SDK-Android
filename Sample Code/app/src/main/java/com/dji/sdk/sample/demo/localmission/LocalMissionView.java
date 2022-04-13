@@ -1,4 +1,4 @@
-package ch.ethz.cea.dca;
+package com.dji.sdk.sample.demo.localmission;
 
 import android.app.Service;
 import android.content.Context;
@@ -28,14 +28,7 @@ public class LocalMissionView extends RelativeLayout
     }
 
     private void init(Context context) {
-        // Set Control Modes for Virtual Stick Inputs
-        // Settings are for absolute height control, directional horizontal control relative to the
-        // world, and absolute angle direction
-        FlightController flightController = ModuleVerificationUtil.getFlightController();
-        flightController.setVerticalControlMode(VerticalControlMode.POSITION);
-        flightController.setRollPitchControlMode(RollPitchControlMode.VELOCITY);
-        flightController.setYawControlMode(YawControlMode.ANGLE);
-        flightController.setRollPitchCoordinateSystem(FlightCoordinateSystem.GROUND);
+
 
         LayoutInflater layoutInflater = (LayoutInflater) context.getSystemService(Service.LAYOUT_INFLATER_SERVICE);
         layoutInflater.inflate(R.layout.view_virtual_stick, this, true);
@@ -46,7 +39,14 @@ public class LocalMissionView extends RelativeLayout
 
     @Override
     public void onClick(View v) {
-
+        // Set Control Modes for Virtual Stick Inputs
+        // Settings are for absolute height control, directional horizontal control relative to the
+        // world, and absolute angle direction
+        FlightController flightController = ModuleVerificationUtil.getFlightController();
+        flightController.setVerticalControlMode(VerticalControlMode.POSITION);
+        flightController.setRollPitchControlMode(RollPitchControlMode.VELOCITY);
+        flightController.setYawControlMode(YawControlMode.ANGLE);
+        flightController.setRollPitchCoordinateSystem(FlightCoordinateSystem.GROUND);
     }
 
     @Override
@@ -56,12 +56,12 @@ public class LocalMissionView extends RelativeLayout
 
     @Override
     public int getDescription() {
-        return 0;
+        return R.string.flight_controller_listview_local_mission;
     }
 
     @NonNull
     @Override
     public String getHint() {
-        return null;
+        return this.getClass().getSimpleName() + ".java";
     }
 }

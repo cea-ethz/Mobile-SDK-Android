@@ -148,9 +148,14 @@ public class ExpandableListAdapter extends BaseExpandableListAdapter {
 
             convertView.setOnClickListener(v -> {
                 try {
+                    //System.out.println("one");
+                    //System.out.println(item);
+                    //System.out.println(item.getLinkedViewClass());
                     Constructor<? extends PresentableView> cons =
                             (item.getLinkedViewClass().getConstructor(Context.class));
+                    //System.out.println("two");
                     PresentableView linkedView = cons.newInstance(context);
+                    //System.out.println("three");
                     DJISampleApplication.getEventBus()
                             .post(new ViewWrapper((View) linkedView, item.getTitleStringId()));
                 } catch (Exception e) {
