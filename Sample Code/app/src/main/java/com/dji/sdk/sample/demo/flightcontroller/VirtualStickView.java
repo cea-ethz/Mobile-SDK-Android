@@ -336,6 +336,25 @@ public class VirtualStickView extends RelativeLayout
 
                 break;
 
+            case R.id.btn_vstick_land:
+                flightController.startLanding(new CommonCallbacks.CompletionCallback() {
+                    @Override
+                    public void onResult(DJIError djiError) {
+                        DialogUtils.showDialogBasedOnError(getContext(),djiError);
+                    }
+                });
+
+                break;
+
+            case R.id.btn_vstick_confirm_land:
+                flightController.confirmLanding(new CommonCallbacks.CompletionCallback() {
+                    @Override
+                    public void onResult(DJIError djiError) {
+                        DialogUtils.showDialogBasedOnError(getContext(), djiError);
+                    }
+                });
+                break;
+
             default:
                 break;
         }
