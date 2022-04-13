@@ -10,17 +10,29 @@ import android.widget.RelativeLayout;
 import androidx.annotation.NonNull;
 
 import com.dji.sdk.sample.R;
+import com.dji.sdk.sample.internal.controller.DJISampleApplication;
 import com.dji.sdk.sample.internal.utils.ModuleVerificationUtil;
 import com.dji.sdk.sample.internal.view.PresentableView;
 
-import dji.common.flightcontroller.virtualstick.FlightCoordinateSystem;
-import dji.common.flightcontroller.virtualstick.RollPitchControlMode;
-import dji.common.flightcontroller.virtualstick.VerticalControlMode;
-import dji.common.flightcontroller.virtualstick.YawControlMode;
+import java.util.TimerTask;
+
+import ch.ethz.cea.dca.*;
+
+import dji.common.error.DJIError;
+import dji.common.flightcontroller.virtualstick.*;
+import dji.common.util.CommonCallbacks;
+
 import dji.sdk.flightcontroller.FlightController;
 
 public class LocalMissionView extends RelativeLayout
         implements View.OnClickListener, CompoundButton.OnCheckedChangeListener, PresentableView {
+
+    private LocalMission localMission;
+
+    private float pitch;
+    private float roll;
+    private float yaw;
+    private float throttle;
 
     public LocalMissionView(Context context) {
         super(context);
@@ -63,5 +75,26 @@ public class LocalMissionView extends RelativeLayout
     @Override
     public String getHint() {
         return this.getClass().getSimpleName() + ".java";
+    }
+
+    private class SendVirtualStickDataTask extends TimerTask {
+
+        @Override
+        public void run() {
+            if (ModuleVerificationUtil.isFlightControllerAvailable()) {
+                DJISampleApplication.getAircraftInstance()
+                        .getFlightController()
+                        .sendVirtualStickFlightControlData(new FlightControlData(pitch,
+                                        roll,
+                                        yaw,
+                                        throttle),
+                                new CommonCallbacks.CompletionCallback() {
+                                    @Override
+                                    public void onResult(DJIError djiError) {
+
+                                    }
+                                });
+            }
+        }
     }
 }
