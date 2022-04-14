@@ -144,6 +144,13 @@
     <string name="airlink_listview_ocusync_set_get_channel">Set/Get OcusyncAirlink Channel</string>
     set_get_ocusync_airlink_channel_description
 
+    <!-- Local Mission View -->
+    <string name="listener_heading">Heading: %1$d</string>
+    <string name="listener_velocity">VEL\n X: %1$d Y: %2$d Z: %3$d </string>
+    <string name="listener_position">POS\n X: %1$d Y: %2$d</string>
+    <string name="listener_gps">GPS\n X: %1$d Y: %2$d</string>
+
+
     <!--*************** Camera string set ***************-->
     <!-- Shoot Single Photo View -->
     <string name="shoot_single_photo">Shoot Single Photo</string>

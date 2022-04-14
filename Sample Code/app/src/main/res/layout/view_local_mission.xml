@@ -32,7 +32,7 @@
 
         <ScrollView
             android:id="@+id/lm_list_scroll"
-            android:layout_width="200dp"
+            android:layout_width="140dp"
             android:layout_height="300dp"
             android:layout_below="@+id/video_feed_frame"
             android:layout_alignRight="@+id/video_feed_frame"
@@ -51,14 +51,25 @@
         </ScrollView>
 
         <TextView
-            android:id="@+id/text_velocity"
+            android:id="@+id/text_heading"
             android:layout_width="wrap_content"
             android:layout_height="50dp"
             android:layout_below="@+id/video_feed_frame"
             android:layout_alignLeft="@+id/video_feed_frame"
             android:layout_toLeftOf="@+id/lm_list_scroll"
             android:layout_marginTop="10dp"
+            android:text="@string/listener_heading"
             />
+
+        <TextView
+            android:id="@+id/text_velocity"
+            android:layout_width="wrap_content"
+            android:layout_height="50dp"
+            android:layout_below="@+id/text_heading"
+            android:layout_alignLeft="@+id/video_feed_frame"
+            android:layout_marginTop="10dp"
+            android:layout_toLeftOf="@+id/lm_list_scroll"
+            android:text="@string/listener_velocity" />
         <TextView
             android:id="@+id/text_position_estimated"
             android:layout_width="wrap_content"
@@ -67,6 +78,7 @@
             android:layout_alignLeft="@+id/video_feed_frame"
             android:layout_toLeftOf="@+id/lm_list_scroll"
             android:layout_marginTop="10dp"
+            android:text="@string/listener_position"
             />
         <TextView
             android:id="@+id/text_position_gps"
@@ -76,6 +88,7 @@
             android:layout_alignLeft="@+id/video_feed_frame"
             android:layout_toLeftOf="@+id/lm_list_scroll"
             android:layout_marginTop="10dp"
+            android:text="@string/listener_gps"
             />
 
         <Button

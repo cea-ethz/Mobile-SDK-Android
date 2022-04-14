@@ -12,7 +12,10 @@ import androidx.annotation.NonNull;
 import com.dji.sdk.sample.R;
 import com.dji.sdk.sample.demo.flightcontroller.VirtualStickView;
 import com.dji.sdk.sample.internal.controller.DJISampleApplication;
+import com.dji.sdk.sample.internal.utils.Helper;
 import com.dji.sdk.sample.internal.utils.ModuleVerificationUtil;
+import com.dji.sdk.sample.internal.utils.ToastUtils;
+import com.dji.sdk.sample.internal.utils.VideoFeedView;
 import com.dji.sdk.sample.internal.view.PresentableView;
 
 import java.util.Timer;
@@ -20,11 +23,18 @@ import java.util.TimerTask;
 
 import ch.ethz.cea.dca.*;
 
+import dji.common.airlink.PhysicalSource;
+import dji.common.camera.SettingsDefinitions;
 import dji.common.error.DJIError;
 import dji.common.flightcontroller.virtualstick.*;
 import dji.common.util.CommonCallbacks;
 
+import dji.sdk.base.BaseProduct;
+import dji.sdk.camera.Camera;
+import dji.sdk.camera.VideoFeeder;
 import dji.sdk.flightcontroller.FlightController;
+import dji.sdk.media.MediaFile;
+import dji.sdk.sdkmanager.DJISDKManager;
 
 public class LocalMissionView extends RelativeLayout
         implements View.OnClickListener, CompoundButton.OnCheckedChangeListener, PresentableView {
@@ -36,6 +46,12 @@ public class LocalMissionView extends RelativeLayout
     private float yaw;
     private float throttle;
 
+    private Camera camera;
+
+    private VideoFeedView primaryVideoFeed;
+    private VideoFeeder.PhysicalSourceListener sourceListener;
+    private View primaryCoverView;
+
     private Timer sendVirtualStickDataTimer;
     private SendVirtualStickDataTask sendVirtualStickDataTask;
 
@@ -44,10 +60,39 @@ public class LocalMissionView extends RelativeLayout
         init(context);
     }
 
+    private void init(Context context) {
+        LayoutInflater layoutInflater = (LayoutInflater) context.getSystemService(Service.LAYOUT_INFLATER_SERVICE);
+        layoutInflater.inflate(R.layout.view_local_mission, this, true);
+
+        //initAllKeys();
+        initUI();
+    }
+
+    private void initUI() {
+        primaryCoverView = findViewById(R.id.primary_cover_view);
+        primaryVideoFeed = (VideoFeedView) findViewById(R.id.primary_video_feed);
+        primaryVideoFeed.setCoverView(primaryCoverView);
+    }
+
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
         setUpListeners();
+
+        if (ModuleVerificationUtil.isCameraModuleAvailable()) {
+            camera = DJISampleApplication.getAircraftInstance().getCamera();
+            if (ModuleVerificationUtil.isMatrice300RTK() || ModuleVerificationUtil.isMavicAir2()) {
+                camera.setFlatMode(SettingsDefinitions.FlatCameraMode.PHOTO_SINGLE, djiError -> ToastUtils.setResultToToast("setFlatMode to PHOTO_SINGLE"));
+            } else {
+                camera.setMode(SettingsDefinitions.CameraMode.SHOOT_PHOTO, djiError -> ToastUtils.setResultToToast("setMode to shoot_PHOTO"));
+            }
+            camera.setMediaFileCallback(new MediaFile.Callback() {
+                @Override
+                public void onNewFile(@NonNull MediaFile mediaFile) {
+                    ToastUtils.setResultToToast("New photo generated");
+                }
+            });
+        }
     }
 
     @Override
@@ -66,25 +111,34 @@ public class LocalMissionView extends RelativeLayout
         super.onDetachedFromWindow();
     }
 
-    private void init(Context context) {
-
-
-        LayoutInflater layoutInflater = (LayoutInflater) context.getSystemService(Service.LAYOUT_INFLATER_SERVICE);
-        layoutInflater.inflate(R.layout.view_local_mission, this, true);
-
-        //initAllKeys();
-        //initUI();
-    }
 
     private void setUpListeners() {
-        // To Include
-        // - Velocity
-        // - Estimated position
-        // - Recorded GPS
+        sourceListener = new VideoFeeder.PhysicalSourceListener() {
+            @Override
+            public void onChange(VideoFeeder.VideoFeed videoFeed, PhysicalSource newPhysicalSource) {
+            }
+        };
+        setVideoFeederListeners(true);
     }
 
     private void tearDownListeners() {
+        setVideoFeederListeners(false);
+    }
 
+    private void setVideoFeederListeners(boolean isOpen) {
+        if (VideoFeeder.getInstance() == null) return;
+
+        final BaseProduct product = DJISDKManager.getInstance().getProduct();
+        if (product != null) {
+            VideoFeeder.VideoDataListener primaryVideoDataListener =
+                    primaryVideoFeed.registerLiveVideo(VideoFeeder.getInstance().getPrimaryVideoFeed(), true);
+            if (isOpen) {
+                VideoFeeder.getInstance().addPhysicalSourceListener(sourceListener);
+            } else {
+                VideoFeeder.getInstance().removePhysicalSourceListener(sourceListener);
+                VideoFeeder.getInstance().getPrimaryVideoFeed().removeVideoDataListener(primaryVideoDataListener);
+            }
+        }
     }
 
     @Override
