@@ -6,6 +6,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.CompoundButton;
 import android.widget.RelativeLayout;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 
@@ -26,20 +27,29 @@ import ch.ethz.cea.dca.*;
 import dji.common.airlink.PhysicalSource;
 import dji.common.camera.SettingsDefinitions;
 import dji.common.error.DJIError;
+import dji.common.flightcontroller.FlightControllerState;
 import dji.common.flightcontroller.virtualstick.*;
 import dji.common.util.CommonCallbacks;
 
 import dji.sdk.base.BaseProduct;
 import dji.sdk.camera.Camera;
 import dji.sdk.camera.VideoFeeder;
+import dji.sdk.flightcontroller.Compass;
 import dji.sdk.flightcontroller.FlightController;
 import dji.sdk.media.MediaFile;
+import dji.sdk.products.Aircraft;
 import dji.sdk.sdkmanager.DJISDKManager;
+
+import static com.google.android.gms.internal.zzahn.runOnUiThread;
 
 public class LocalMissionView extends RelativeLayout
         implements View.OnClickListener, CompoundButton.OnCheckedChangeListener, PresentableView {
 
     private LocalMission localMission;
+
+    private Compass compass;
+
+    private float heading_real;
 
     private float pitch;
     private float roll;
@@ -54,6 +64,10 @@ public class LocalMissionView extends RelativeLayout
 
     private Timer sendVirtualStickDataTimer;
     private SendVirtualStickDataTask sendVirtualStickDataTask;
+
+    // UI Objects
+
+    private TextView textViewListenerHeading;
 
     public LocalMissionView(Context context) {
         super(context);
@@ -72,6 +86,8 @@ public class LocalMissionView extends RelativeLayout
         primaryCoverView = findViewById(R.id.primary_cover_view);
         primaryVideoFeed = (VideoFeedView) findViewById(R.id.primary_video_feed);
         primaryVideoFeed.setCoverView(primaryCoverView);
+
+        textViewListenerHeading = (TextView) findViewById(R.id.text_heading);
     }
 
     @Override
@@ -113,12 +129,40 @@ public class LocalMissionView extends RelativeLayout
 
 
     private void setUpListeners() {
+        // Camera
         sourceListener = new VideoFeeder.PhysicalSourceListener() {
             @Override
             public void onChange(VideoFeeder.VideoFeed videoFeed, PhysicalSource newPhysicalSource) {
             }
         };
         setVideoFeederListeners(true);
+
+        // FlightController
+        if (ModuleVerificationUtil.isFlightControllerAvailable()) {
+            FlightController flightController =
+                    ((Aircraft) DJISampleApplication.getProductInstance()).getFlightController();
+
+            flightController.setStateCallback(new FlightControllerState.Callback() {
+                @Override
+                public void onUpdate(@NonNull FlightControllerState djiFlightControllerCurrentState) {
+                    // Compass
+                    if (null != compass) {
+                        heading_real = compass.getHeading();
+                        System.out.println(heading_real);
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                textViewListenerHeading.setText(getContext().getString(R.string.listener_heading,heading_real));
+                            }
+                        });
+
+                    }
+                }
+            });
+            if (ModuleVerificationUtil.isCompassAvailable()) {
+                compass = flightController.getCompass();
+            }
+        }
     }
 
     private void tearDownListeners() {

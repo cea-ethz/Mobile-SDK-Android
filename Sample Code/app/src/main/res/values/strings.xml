@@ -145,10 +145,10 @@
     set_get_ocusync_airlink_channel_description
 
     <!-- Local Mission View -->
-    <string name="listener_heading">Heading: %1$d</string>
-    <string name="listener_velocity">VEL\n X: %1$d Y: %2$d Z: %3$d </string>
-    <string name="listener_position">POS\n X: %1$d Y: %2$d</string>
-    <string name="listener_gps">GPS\n X: %1$d Y: %2$d</string>
+    <string name="listener_heading">Heading: %1$f</string>
+    <string name="listener_velocity">VEL\n X: %1$f Y: %2$f Z: %3$f </string>
+    <string name="listener_position">POS\n X: %1$f Y: %2$f</string>
+    <string name="listener_gps">GPS\n X: %1$f Y: %2$f</string>
 
 
     <!--*************** Camera string set ***************-->
