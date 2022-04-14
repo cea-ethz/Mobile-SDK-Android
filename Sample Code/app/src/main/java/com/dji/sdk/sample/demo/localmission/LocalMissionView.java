@@ -68,6 +68,7 @@ public class LocalMissionView extends RelativeLayout
     // UI Objects
 
     private TextView textViewListenerHeading;
+    private TextView textViewListenerVelocity;
 
     public LocalMissionView(Context context) {
         super(context);
@@ -88,6 +89,7 @@ public class LocalMissionView extends RelativeLayout
         primaryVideoFeed.setCoverView(primaryCoverView);
 
         textViewListenerHeading = (TextView) findViewById(R.id.text_heading);
+        textViewListenerVelocity = (TextView) findViewById(R.id.text_velocity);
     }
 
     @Override
@@ -148,15 +150,25 @@ public class LocalMissionView extends RelativeLayout
                     // Compass
                     if (null != compass) {
                         heading_real = compass.getHeading();
-                        System.out.println(heading_real);
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
                                 textViewListenerHeading.setText(getContext().getString(R.string.listener_heading,heading_real));
                             }
                         });
-
                     }
+                    // Velocity
+                    float vx = djiFlightControllerCurrentState.getVelocityX();
+                    float vy = djiFlightControllerCurrentState.getVelocityY();
+                    float vz = djiFlightControllerCurrentState.getVelocityZ();
+
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            textViewListenerVelocity.setText(getContext().getString(R.string.listener_velocity,vx,vy,vz));
+                        }
+                    });
+
                 }
             });
             if (ModuleVerificationUtil.isCompassAvailable()) {
@@ -167,6 +179,10 @@ public class LocalMissionView extends RelativeLayout
 
     private void tearDownListeners() {
         setVideoFeederListeners(false);
+
+        if(ModuleVerificationUtil.isFlightControllerAvailable()) {
+            ((Aircraft) DJISampleApplication.getProductInstance()).getFlightController().setStateCallback(null);
+        }
     }
 
     private void setVideoFeederListeners(boolean isOpen) {
