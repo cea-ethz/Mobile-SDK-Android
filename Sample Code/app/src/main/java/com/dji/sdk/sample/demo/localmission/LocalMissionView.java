@@ -11,14 +11,16 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 
 import com.dji.sdk.sample.R;
-import com.dji.sdk.sample.demo.flightcontroller.VirtualStickView;
 import com.dji.sdk.sample.internal.controller.DJISampleApplication;
-import com.dji.sdk.sample.internal.utils.Helper;
 import com.dji.sdk.sample.internal.utils.ModuleVerificationUtil;
 import com.dji.sdk.sample.internal.utils.ToastUtils;
 import com.dji.sdk.sample.internal.utils.VideoFeedView;
 import com.dji.sdk.sample.internal.view.PresentableView;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -43,6 +45,8 @@ import dji.sdk.products.Aircraft;
 import dji.sdk.sdkmanager.DJISDKManager;
 
 import static com.google.android.gms.internal.zzahn.runOnUiThread;
+
+import org.json.JSONObject;
 
 import javax.vecmath.Point3f;
 import javax.vecmath.Vector3f;
@@ -105,6 +109,8 @@ public class LocalMissionView extends RelativeLayout
         textViewListenerVelocity = (TextView) findViewById(R.id.text_velocity);
         textViewListenerPositionEstimated = (TextView) findViewById(R.id.text_position_estimated);
         textViewListenerPositionGPS = (TextView) findViewById(R.id.text_position_gps);
+
+        findViewById(R.id.btn_mission_load).setOnClickListener(this);
     }
 
     @Override
@@ -235,16 +241,64 @@ public class LocalMissionView extends RelativeLayout
         // Settings are for absolute height control, directional horizontal control relative to the
         // world, and absolute angle direction
         FlightController flightController = ModuleVerificationUtil.getFlightController();
+        if (flightController == null) {
+            return;
+        }
         flightController.setVerticalControlMode(VerticalControlMode.POSITION);
         flightController.setRollPitchControlMode(RollPitchControlMode.VELOCITY);
         flightController.setYawControlMode(YawControlMode.ANGLE);
         flightController.setRollPitchCoordinateSystem(FlightCoordinateSystem.GROUND);
+
+        switch(v.getId()) {
+            case R.id.btn_mission_load:
+                Thread thread = new Thread(new Runnable() {
+                    @Override public void run() {
+                        loadMission();
+                    }
+                });
+                thread.start();
+                break;
+        }
     }
 
     @Override
     public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
 
     }
+
+    private void loadMission() {
+        String urlString = "http://192.168.0.164:8000/mission.json";
+
+        try {
+            HttpURLConnection urlConnection = null;
+            URL url = new URL(urlString);
+            urlConnection = (HttpURLConnection) url.openConnection();
+            urlConnection.setRequestMethod("GET");
+            urlConnection.setReadTimeout(10000 /* milliseconds */ );
+            urlConnection.setConnectTimeout(15000 /* milliseconds */ );
+            urlConnection.setDoOutput(true);
+            urlConnection.connect();
+
+            BufferedReader br = new BufferedReader(new InputStreamReader(url.openStream()));
+            StringBuilder sb = new StringBuilder();
+
+            String line;
+            while ((line = br.readLine()) != null) {
+                sb.append(line + "\n");
+            }
+            br.close();
+
+            String jsonString = sb.toString();
+            //System.out.println("JSON: " + jsonString);
+
+            localMission = new LocalMission();
+            localMission.loadFromJson(jsonString);
+        }
+        catch(Exception e) {
+            System.out.println(e);
+        }
+    }
+
 
     @Override
     public int getDescription() {

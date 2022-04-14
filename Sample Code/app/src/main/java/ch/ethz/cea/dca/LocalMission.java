@@ -4,6 +4,9 @@ import java.util.ArrayList;
 
 import static ch.ethz.cea.dca.LocalMissionEventType.*;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 public class LocalMission {
 
     public ArrayList<LocalMissionEvent> events;
@@ -15,7 +18,17 @@ public class LocalMission {
         events = new ArrayList<LocalMissionEvent>();
     }
 
-    public void loadFromServer(String fileName) {
+    public void loadFromJson(String jsonString) {
+        try {
+            JSONObject obj = new JSONObject(jsonString);
+            String missionName = obj.getString("mission_name");
+            JSONArray events = obj.getJSONArray("events");
+            System.out.println("Mission : " + missionName + " has " + events.length() + " events");
+        }
+        catch(Exception e) {
+            System.out.println(e);
+        }
+
 
     }
 
