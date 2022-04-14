@@ -85,6 +85,8 @@ public class LocalMissionView extends RelativeLayout
     private TextView textViewListenerPositionEstimated;
     private TextView textViewListenerPositionGPS;
 
+    private TextView textViewMissionList;
+
     public LocalMissionView(Context context) {
         super(context);
         init(context);
@@ -109,6 +111,7 @@ public class LocalMissionView extends RelativeLayout
         textViewListenerVelocity = (TextView) findViewById(R.id.text_velocity);
         textViewListenerPositionEstimated = (TextView) findViewById(R.id.text_position_estimated);
         textViewListenerPositionGPS = (TextView) findViewById(R.id.text_position_gps);
+        textViewMissionList = (TextView) findViewById(R.id.lm_list_text);
 
         findViewById(R.id.btn_mission_load).setOnClickListener(this);
     }
@@ -289,10 +292,17 @@ public class LocalMissionView extends RelativeLayout
             br.close();
 
             String jsonString = sb.toString();
-            //System.out.println("JSON: " + jsonString);
 
             localMission = new LocalMission();
             localMission.loadFromJson(jsonString);
+
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    textViewMissionList.setText(localMission.toString());
+                }
+            });
+
         }
         catch(Exception e) {
             System.out.println(e);

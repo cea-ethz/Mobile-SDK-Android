@@ -70,16 +70,16 @@
             android:layout_marginTop="10dp"
             android:layout_toLeftOf="@+id/lm_list_scroll"
             android:text="@string/listener_velocity" />
+
         <TextView
             android:id="@+id/text_position_estimated"
             android:layout_width="wrap_content"
             android:layout_height="50dp"
             android:layout_below="@+id/text_velocity"
             android:layout_alignLeft="@+id/video_feed_frame"
-            android:layout_toLeftOf="@+id/lm_list_scroll"
             android:layout_marginTop="10dp"
-            android:text="@string/listener_position"
-            />
+            android:layout_toLeftOf="@+id/lm_list_scroll"
+            android:text="@string/listener_position" />
         <TextView
             android:id="@+id/text_position_gps"
             android:layout_width="wrap_content"
