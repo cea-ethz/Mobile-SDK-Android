@@ -42,6 +42,9 @@ import dji.sdk.sdkmanager.DJISDKManager;
 
 import static com.google.android.gms.internal.zzahn.runOnUiThread;
 
+import javax.vecmath.Point3f;
+import javax.vecmath.Vector3f;
+
 public class LocalMissionView extends RelativeLayout
         implements View.OnClickListener, CompoundButton.OnCheckedChangeListener, PresentableView {
 
@@ -56,6 +59,10 @@ public class LocalMissionView extends RelativeLayout
     private float yaw;
     private float throttle;
 
+    private Point3f positionEstimated;
+
+    private final float controllerUpdateTime = 0.1f;
+
     private Camera camera;
 
     private VideoFeedView primaryVideoFeed;
@@ -69,10 +76,13 @@ public class LocalMissionView extends RelativeLayout
 
     private TextView textViewListenerHeading;
     private TextView textViewListenerVelocity;
+    private TextView textViewListenerPositionEstimated;
 
     public LocalMissionView(Context context) {
         super(context);
         init(context);
+
+        positionEstimated = new Point3f();
     }
 
     private void init(Context context) {
@@ -90,6 +100,7 @@ public class LocalMissionView extends RelativeLayout
 
         textViewListenerHeading = (TextView) findViewById(R.id.text_heading);
         textViewListenerVelocity = (TextView) findViewById(R.id.text_velocity);
+        textViewListenerPositionEstimated = (TextView) findViewById(R.id.text_position_estimated);
     }
 
     @Override
@@ -157,15 +168,24 @@ public class LocalMissionView extends RelativeLayout
                             }
                         });
                     }
-                    // Velocity
+                    // Velocity and Estimated Position (Basic)
                     float vx = djiFlightControllerCurrentState.getVelocityX();
                     float vy = djiFlightControllerCurrentState.getVelocityY();
                     float vz = djiFlightControllerCurrentState.getVelocityZ();
+
+                    Vector3f velocity = new Vector3f(vx,vy,vz);
+
+                    Vector3f scaledVelocity = new Vector3f(velocity);
+                    scaledVelocity.scale(controllerUpdateTime);
+
+                    positionEstimated.add(scaledVelocity);
+
 
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
                             textViewListenerVelocity.setText(getContext().getString(R.string.listener_velocity,vx,vy,vz));
+                            textViewListenerPositionEstimated.setText(getContext().getString(R.string.listener_position,positionEstimated.x,positionEstimated.y));
                         }
                     });
 
