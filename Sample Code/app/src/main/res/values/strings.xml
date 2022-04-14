@@ -148,7 +148,7 @@
     <string name="listener_heading">Heading: %1$f</string>
     <string name="listener_velocity">VEL\n X: %1$f Y: %2$f Z: %3$f </string>
     <string name="listener_position">POS\n X: %1$f Y: %2$f</string>
-    <string name="listener_gps">GPS\n X: %1$f Y: %2$f</string>
+    <string name="listener_gps">GPS Signal: %1$s\n Lat: %2$f Lon: %3$f</string>
 
 
     <!--*************** Camera string set ***************-->

@@ -28,6 +28,8 @@ import dji.common.airlink.PhysicalSource;
 import dji.common.camera.SettingsDefinitions;
 import dji.common.error.DJIError;
 import dji.common.flightcontroller.FlightControllerState;
+import dji.common.flightcontroller.GPSSignalLevel;
+import dji.common.flightcontroller.LocationCoordinate3D;
 import dji.common.flightcontroller.virtualstick.*;
 import dji.common.util.CommonCallbacks;
 
@@ -77,6 +79,7 @@ public class LocalMissionView extends RelativeLayout
     private TextView textViewListenerHeading;
     private TextView textViewListenerVelocity;
     private TextView textViewListenerPositionEstimated;
+    private TextView textViewListenerPositionGPS;
 
     public LocalMissionView(Context context) {
         super(context);
@@ -101,6 +104,7 @@ public class LocalMissionView extends RelativeLayout
         textViewListenerHeading = (TextView) findViewById(R.id.text_heading);
         textViewListenerVelocity = (TextView) findViewById(R.id.text_velocity);
         textViewListenerPositionEstimated = (TextView) findViewById(R.id.text_position_estimated);
+        textViewListenerPositionGPS = (TextView) findViewById(R.id.text_position_gps);
     }
 
     @Override
@@ -168,7 +172,7 @@ public class LocalMissionView extends RelativeLayout
                             }
                         });
                     }
-                    // Velocity and Estimated Position (Basic)
+                    // Velocity, Estimated Position (Basic), Position (GPS)
                     float vx = djiFlightControllerCurrentState.getVelocityX();
                     float vy = djiFlightControllerCurrentState.getVelocityY();
                     float vz = djiFlightControllerCurrentState.getVelocityZ();
@@ -180,12 +184,16 @@ public class LocalMissionView extends RelativeLayout
 
                     positionEstimated.add(scaledVelocity);
 
+                    LocationCoordinate3D positionGPS = djiFlightControllerCurrentState.getAircraftLocation();
+                    GPSSignalLevel signalLevel = djiFlightControllerCurrentState.getGPSSignalLevel();
+
 
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
                             textViewListenerVelocity.setText(getContext().getString(R.string.listener_velocity,vx,vy,vz));
                             textViewListenerPositionEstimated.setText(getContext().getString(R.string.listener_position,positionEstimated.x,positionEstimated.y));
+                            textViewListenerPositionGPS.setText(getContext().getString(R.string.listener_gps,signalLevel, positionGPS.getLatitude(),positionGPS.getLongitude()));
                         }
                     });
 
