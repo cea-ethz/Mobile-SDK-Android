@@ -12,6 +12,7 @@ import androidx.annotation.NonNull;
 
 import com.dji.sdk.sample.R;
 import com.dji.sdk.sample.internal.controller.DJISampleApplication;
+import com.dji.sdk.sample.internal.utils.DialogUtils;
 import com.dji.sdk.sample.internal.utils.ModuleVerificationUtil;
 import com.dji.sdk.sample.internal.utils.ToastUtils;
 import com.dji.sdk.sample.internal.utils.VideoFeedView;
@@ -50,7 +51,7 @@ import javax.vecmath.Point2f;
 import javax.vecmath.Vector2f;
 
 public class LocalMissionView extends RelativeLayout
-        implements View.OnClickListener, CompoundButton.OnCheckedChangeListener, PresentableView {
+        implements View.OnClickListener, PresentableView {
 
     private LocalMission localMission;
 
@@ -114,6 +115,9 @@ public class LocalMissionView extends RelativeLayout
 
         // Buttons
         findViewById(R.id.btn_mission_load).setOnClickListener(this);
+        findViewById(R.id.btn_enable_virtual_stick).setOnClickListener(this);
+        findViewById(R.id.btn_disable_virtual_stick).setOnClickListener(this);
+        findViewById(R.id.btn_take_off).setOnClickListener(this);
     }
 
     @Override
@@ -245,6 +249,9 @@ public class LocalMissionView extends RelativeLayout
     }
 
     private void runMission() {
+        if (localMission == null || localMission.missionState != LocalMissionState.RUNNING) {
+            return;
+        }
         LocalMissionEvent lmEvent = localMission.getCurrentEvent();
         switch(lmEvent.eventType) {
             case GO_TO:
@@ -252,7 +259,7 @@ public class LocalMissionView extends RelativeLayout
                 vec.sub(positionEstimated);
                 float d = vec.length();
                 if (d < 0.5) {
-
+                    localMission.advance();
                 }
                 vec.normalize();
                 vec.scale(0.1f);
@@ -282,12 +289,40 @@ public class LocalMissionView extends RelativeLayout
         if (flightController == null) {
             return;
         }
-        flightController.setVerticalControlMode(VerticalControlMode.POSITION);
-        flightController.setRollPitchControlMode(RollPitchControlMode.VELOCITY);
-        flightController.setYawControlMode(YawControlMode.ANGLE);
-        flightController.setRollPitchCoordinateSystem(FlightCoordinateSystem.GROUND);
 
         switch(v.getId()) {
+            case R.id.btn_enable_virtual_stick:
+                flightController.setVirtualStickModeEnabled(true, new CommonCallbacks.CompletionCallback() {
+                    @Override
+                    public void onResult(DJIError djiError) {
+                        flightController.setVerticalControlMode(VerticalControlMode.POSITION);
+                        flightController.setRollPitchControlMode(RollPitchControlMode.VELOCITY);
+                        flightController.setYawControlMode(YawControlMode.ANGLE);
+                        flightController.setRollPitchCoordinateSystem(FlightCoordinateSystem.GROUND);
+                        // Advanced mode allows for GPS-stabilized hovering, and collision avoidance
+                        // if desired
+                        flightController.setVirtualStickAdvancedModeEnabled(true);
+                        DialogUtils.showDialogBasedOnError(getContext(), djiError);
+                    }
+                });
+                break;
+
+            case R.id.btn_disable_virtual_stick:
+                flightController.setVirtualStickModeEnabled(false, new CommonCallbacks.CompletionCallback() {
+                    @Override
+                    public void onResult(DJIError djiError) {
+                        DialogUtils.showDialogBasedOnError(getContext(), djiError);
+                    }
+                });
+                break;
+            case R.id.btn_take_off:
+                flightController.startTakeoff(new CommonCallbacks.CompletionCallback() {
+                    @Override
+                    public void onResult(DJIError djiError) {
+                        DialogUtils.showDialogBasedOnError(getContext(), djiError);
+                    }
+                });
+                break;
             case R.id.btn_mission_load:
                 Thread thread = new Thread(new Runnable() {
                     @Override public void run() {
@@ -296,15 +331,14 @@ public class LocalMissionView extends RelativeLayout
                 });
                 thread.start();
                 break;
+            case R.id.btn_mission_start:
+                break;
         }
     }
 
-    @Override
-    public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-
-    }
 
     private void loadMission() {
+        //TODO: Make this not hardcoded
         String urlString = "http://192.168.0.164:8000/mission.json";
 
         try {
@@ -357,7 +391,6 @@ public class LocalMissionView extends RelativeLayout
     }
 
     private class SendVirtualStickDataTask extends TimerTask {
-
         @Override
         public void run() {
             if (ModuleVerificationUtil.isFlightControllerAvailable()) {

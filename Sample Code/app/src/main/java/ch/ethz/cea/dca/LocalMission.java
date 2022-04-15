@@ -13,7 +13,7 @@ public class LocalMission {
 
     private int position = 0;
 
-    private boolean finished = false;
+    public LocalMissionState missionState = LocalMissionState.NOT_RUNNING;
 
     /**
      * Empty Mission
@@ -50,7 +50,7 @@ public class LocalMission {
     public void advance() {
         position += 1;
         if (position >= events.size()) {
-            finished = true;
+            missionState = LocalMissionState.FINISHED;
         }
     }
 

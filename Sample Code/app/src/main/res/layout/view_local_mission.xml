@@ -111,15 +111,15 @@
 
         <Button
             android:id="@+id/btn_take_off"
+            style="@style/common_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Take Off"
-            android:layout_marginLeft="10dp"
-            android:layout_marginBottom="10dp"
             android:layout_alignParentBottom="true"
-            android:layout_toRightOf="@+id/btn_disable_virtual_stick"
+            android:layout_marginLeft="10dp"
             android:layout_marginTop="10dp"
-            style="@style/common_button"/>
+            android:layout_marginBottom="10dp"
+            android:layout_toRightOf="@+id/btn_disable_virtual_stick"
+            android:text="Take Off" />
 
         <Button
             android:id="@+id/btn_vstick_land"
@@ -130,19 +130,19 @@
             android:layout_above="@+id/btn_disable_virtual_stick"
             android:layout_centerHorizontal="true"
             android:layout_marginTop="10dp"
-            android:text="Land" />
+            android:text="/Land" />
 
         <Button
             android:id="@+id/btn_vstick_confirm_land"
 
+            style="@style/common_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Confirm Land"
-            android:layout_marginLeft="10dp"
             android:layout_above="@+id/btn_take_off"
-            android:layout_toRightOf="@+id/btn_vstick_land"
+            android:layout_marginLeft="10dp"
             android:layout_marginTop="10dp"
-            style="@style/common_button"/>
+            android:layout_toRightOf="@+id/btn_vstick_land"
+            android:text="/Confirm Land" />
 
         <Button
             android:id="@+id/btn_mission_start"
@@ -152,7 +152,7 @@
             android:layout_above="@+id/btn_vstick_land"
             android:layout_centerHorizontal="true"
             android:layout_marginTop="10dp"
-            android:text="Mission Start" />
+            android:text="/Mission Start" />
 
         <Button
             android:id="@+id/btn_mission_load"
@@ -168,7 +168,7 @@
             android:id="@+id/btn_mission_stop"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Mission Stop"
+            android:text="/Mission Stop"
             style="@style/common_button"
             android:layout_above="@+id/btn_vstick_land"
             android:layout_alignRight="@+id/btn_take_off"
