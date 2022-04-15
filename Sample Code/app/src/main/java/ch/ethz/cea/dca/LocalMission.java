@@ -59,6 +59,12 @@ public class LocalMission {
         String out = "";
         for (int i = 0; i < events.size(); i++) {
             LocalMissionEvent event = events.get(i);
+            if (i == position) {
+                out += "> ";
+            }
+            else {
+                out += "  ";
+            }
             out += String.format("%03d",i) + " " + event.eventType;
             out += "\n";
         }

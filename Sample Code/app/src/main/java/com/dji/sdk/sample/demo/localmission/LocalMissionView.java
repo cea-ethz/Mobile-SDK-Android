@@ -59,10 +59,10 @@ public class LocalMissionView extends RelativeLayout
 
     private float heading_real;
 
-    private float vstickPitch;
-    private float vstickRoll;
-    private float vstickYaw;
-    private float vstickThrottle;
+    private float vstickPitch = 0;
+    private float vstickRoll = 0;
+    private float vstickYaw = 0;
+    private float vstickThrottle = 0f;
 
     private Point2f positionEstimated;
 
@@ -84,8 +84,12 @@ public class LocalMissionView extends RelativeLayout
     private TextView textViewListenerPositionEstimated;
     private TextView textViewListenerVStick;
     private TextView textViewListenerPositionGPS;
+    private TextView textViewListenerMissionState;
+    private TextView textViewListenerMissionError;
 
     private TextView textViewMissionList;
+
+    private int updateCount = 0;
 
     public LocalMissionView(Context context) {
         super(context);
@@ -114,9 +118,12 @@ public class LocalMissionView extends RelativeLayout
         textViewListenerVStick = (TextView) findViewById(R.id.text_vstick);
         textViewListenerPositionGPS = (TextView) findViewById(R.id.text_position_gps);
         textViewMissionList = (TextView) findViewById(R.id.lm_list_text);
+        textViewListenerMissionState = (TextView) findViewById(R.id.text_mission_state);
+        textViewListenerMissionError = (TextView) findViewById(R.id.text_mission_error);
 
         // Buttons
         findViewById(R.id.btn_mission_load).setOnClickListener(this);
+        findViewById(R.id.btn_mission_start).setOnClickListener(this);
         findViewById(R.id.btn_enable_virtual_stick).setOnClickListener(this);
         findViewById(R.id.btn_disable_virtual_stick).setOnClickListener(this);
         findViewById(R.id.btn_take_off).setOnClickListener(this);
@@ -185,12 +192,13 @@ public class LocalMissionView extends RelativeLayout
                 compass = flightController.getCompass();
             }
         }
-        // Send : VStick
-        if (null == sendVirtualStickDataTimer) {
-            sendVirtualStickDataTask = new LocalMissionView.SendVirtualStickDataTask();
-            sendVirtualStickDataTimer = new Timer();
-            sendVirtualStickDataTimer.schedule(sendVirtualStickDataTask, 0, 100);
-        }
+
+        // Only create VStick timer after its enabled
+        sendVirtualStickDataTask = new LocalMissionView.SendVirtualStickDataTask();
+        sendVirtualStickDataTimer = new Timer();
+        sendVirtualStickDataTimer.schedule(sendVirtualStickDataTask, 100, 100);
+
+
     }
 
     private void tearDownListeners() {
@@ -247,6 +255,10 @@ public class LocalMissionView extends RelativeLayout
                 textViewListenerPositionGPS.setText(getContext().getString(R.string.listener_gps,signalLevel, positionGPS.getLatitude(),positionGPS.getLongitude()));
                 textViewListenerHeading.setText(getContext().getString(R.string.listener_heading,heading_real));
                 textViewListenerVStick.setText(getContext().getString(R.string.listener_vstick,vstickPitch,vstickRoll,vstickYaw,vstickThrottle));
+                if (localMission != null) {
+                    textViewListenerMissionState.setText(getContext().getString(R.string.listener_mission_state,localMission.missionState));
+                }
+
             }
         });
     }
@@ -265,7 +277,7 @@ public class LocalMissionView extends RelativeLayout
                     localMission.advance();
                 }
                 vec.normalize();
-                vec.scale(0.1f);
+                vec.scale(1f);
                 vstickPitch = vec.x;
                 vstickRoll = vec.y;
                 break;
@@ -302,6 +314,9 @@ public class LocalMissionView extends RelativeLayout
                         flightController.setRollPitchControlMode(RollPitchControlMode.VELOCITY);
                         flightController.setYawControlMode(YawControlMode.ANGLE);
                         flightController.setRollPitchCoordinateSystem(FlightCoordinateSystem.GROUND);
+
+
+
                         // Advanced mode allows for GPS-stabilized hovering, and collision avoidance
                         // if desired
                         flightController.setVirtualStickAdvancedModeEnabled(true);
@@ -335,6 +350,7 @@ public class LocalMissionView extends RelativeLayout
                 thread.start();
                 break;
             case R.id.btn_mission_start:
+                localMission.missionState = LocalMissionState.RUNNING;
                 break;
         }
     }
@@ -342,7 +358,8 @@ public class LocalMissionView extends RelativeLayout
 
     private void loadMission() {
         //TODO: Make this not hardcoded
-        String urlString = "http://192.168.0.164:8000/mission.json";
+        String urlString = "http://192.168.0.164:8000/mission.json"; // Wifi
+        //String urlString = "http://192.168.80.121:8000/mission.json"; // Hotspot
 
         try {
             HttpURLConnection urlConnection = null;
@@ -397,6 +414,7 @@ public class LocalMissionView extends RelativeLayout
         @Override
         public void run() {
             if (ModuleVerificationUtil.isFlightControllerAvailable()) {
+
                 DJISampleApplication.getAircraftInstance()
                         .getFlightController()
                         .sendVirtualStickFlightControlData(new FlightControlData(vstickPitch,
@@ -406,7 +424,16 @@ public class LocalMissionView extends RelativeLayout
                                 new CommonCallbacks.CompletionCallback() {
                                     @Override
                                     public void onResult(DJIError djiError) {
-
+                                        updateCount += 1;
+                                        runOnUiThread(new Runnable() {
+                                            @Override
+                                            public void run() {
+                                                textViewListenerMissionError.setText(getContext().getString(R.string.listener_mission_error,updateCount + ""));
+                                                if (djiError != null) {
+                                                    textViewListenerMissionError.setText(getContext().getString(R.string.listener_mission_error,djiError.toString()));
+                                                }
+                                            }
+                                        });
                                     }
                                 });
             }

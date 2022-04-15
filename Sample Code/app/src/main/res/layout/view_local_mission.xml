@@ -33,7 +33,7 @@
         <ScrollView
             android:id="@+id/lm_list_scroll"
             android:layout_width="140dp"
-            android:layout_height="300dp"
+            android:layout_height="290dp"
             android:layout_below="@+id/video_feed_frame"
             android:layout_alignRight="@+id/video_feed_frame"
             android:layout_marginLeft="5dp"
@@ -49,6 +49,29 @@
                 android:textColor="@color/black" />
 
         </ScrollView>
+
+        <TextView
+            android:id="@+id/text_mission_state"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:layout_below="@+id/lm_list_scroll"
+            android:layout_alignRight="@+id/lm_list_scroll"
+            android:layout_alignLeft="@+id/lm_list_scroll"
+            android:layout_marginTop="10dp"
+            android:text="@string/listener_mission_state"
+            />
+
+        <TextView
+            android:id="@+id/text_mission_error"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:layout_below="@+id/lm_list_scroll"
+            android:layout_toLeftOf="@+id/text_mission_state"
+            android:layout_alignLeft="@+id/text_position_gps"
+            android:layout_marginTop="10dp"
+            android:layout_marginRight="10dp"
+            android:text="@string/listener_mission_error"
+            />
 
         <TextView
             android:id="@+id/text_heading"
@@ -132,38 +155,16 @@
             android:layout_toRightOf="@+id/btn_disable_virtual_stick"
             android:text="Take Off" />
 
-        <Button
-            android:id="@+id/btn_vstick_land"
-
-            style="@style/common_button"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_above="@+id/btn_disable_virtual_stick"
-            android:layout_centerHorizontal="true"
-            android:layout_marginTop="10dp"
-            android:text="/Land" />
-
-        <Button
-            android:id="@+id/btn_vstick_confirm_land"
-
-            style="@style/common_button"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_above="@+id/btn_take_off"
-            android:layout_marginLeft="10dp"
-            android:layout_marginTop="10dp"
-            android:layout_toRightOf="@+id/btn_vstick_land"
-            android:text="/Confirm Land" />
 
         <Button
             android:id="@+id/btn_mission_start"
             style="@style/common_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_above="@+id/btn_vstick_land"
+            android:layout_above="@+id/btn_disable_virtual_stick"
             android:layout_centerHorizontal="true"
             android:layout_marginTop="10dp"
-            android:text="/Mission Start" />
+            android:text="Mission Start" />
 
         <Button
             android:id="@+id/btn_mission_load"
@@ -171,7 +172,7 @@
             android:layout_height="wrap_content"
             android:text="Mission Load"
             style="@style/common_button"
-            android:layout_above="@+id/btn_vstick_land"
+            android:layout_above="@+id/btn_disable_virtual_stick"
             android:layout_alignLeft="@+id/btn_enable_virtual_stick"
             android:layout_marginTop="10dp"/>
 
@@ -181,7 +182,7 @@
             android:layout_height="wrap_content"
             android:text="/Mission Stop"
             style="@style/common_button"
-            android:layout_above="@+id/btn_vstick_land"
+            android:layout_above="@+id/btn_disable_virtual_stick"
             android:layout_alignRight="@+id/btn_take_off"
             android:layout_marginTop="10dp"/>
     </RelativeLayout>

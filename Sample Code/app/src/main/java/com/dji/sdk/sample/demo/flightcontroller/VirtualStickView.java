@@ -225,6 +225,8 @@ public class VirtualStickView extends RelativeLayout
                 yaw = yawJoyControlMaxSpeed * pX;
                 throttle = verticalJoyControlMaxSpeed * pY;
 
+                System.out.println(throttle);
+
                 if (null == sendVirtualStickDataTimer) {
                     sendVirtualStickDataTask = new SendVirtualStickDataTask();
                     sendVirtualStickDataTimer = new Timer();
