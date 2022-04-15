@@ -2,6 +2,8 @@ package com.dji.sdk.sample.demo.localmission;
 
 import android.app.Service;
 import android.content.Context;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.RelativeLayout;
@@ -28,6 +30,7 @@ import ch.ethz.cea.dca.*;
 
 import dji.common.airlink.PhysicalSource;
 import dji.common.camera.SettingsDefinitions;
+import dji.common.camera.SystemState;
 import dji.common.error.DJIError;
 import dji.common.flightcontroller.FlightControllerState;
 import dji.common.flightcontroller.GPSSignalLevel;
@@ -45,6 +48,7 @@ import dji.sdk.flightcontroller.Compass;
 import dji.sdk.flightcontroller.FlightController;
 import dji.sdk.gimbal.Gimbal;
 import dji.sdk.media.MediaFile;
+import dji.sdk.media.MediaFileInfo;
 import dji.sdk.products.Aircraft;
 import dji.sdk.sdkmanager.DJISDKManager;
 
@@ -60,6 +64,8 @@ public class LocalMissionView extends RelativeLayout
 
     private Gimbal gimbal = null;
     private Compass compass;
+
+    private boolean cameraReady = true;
 
     private float heading_real;
     private float gimbal_pitch_real = 0;
@@ -146,10 +152,17 @@ public class LocalMissionView extends RelativeLayout
             } else {
                 camera.setMode(SettingsDefinitions.CameraMode.SHOOT_PHOTO, djiError -> ToastUtils.setResultToToast("setMode to shoot_PHOTO"));
             }
-            camera.setMediaFileCallback(new MediaFile.Callback() {
+//            camera.setMediaFileCallback(new MediaFile.Callback() {
+//                @Override
+//                public void onNewFile(@NonNull MediaFile mediaFile) {
+//                    ToastUtils.setResultToToast("New photo generated");
+//                }
+//            });
+            camera.setNewGeneratedMediaFileInfoCallback(new MediaFile.NewFileInfoCallback() {
                 @Override
-                public void onNewFile(@NonNull MediaFile mediaFile) {
+                public void onNewFileInfo(@NonNull MediaFileInfo mediaFileInfo) {
                     ToastUtils.setResultToToast("New photo generated");
+                    cameraReady = true;
                 }
             });
         }
@@ -180,6 +193,16 @@ public class LocalMissionView extends RelativeLayout
             }
         };
         setVideoFeederListeners(true);
+
+        Camera camera = DJISampleApplication.getProductInstance().getCamera();
+        camera.setSystemStateCallback(new SystemState.Callback() {
+            @Override
+            public void onUpdate(@NonNull SystemState systemState) {
+                if ((!systemState.isShootingSinglePhoto()) && (!systemState.isStoringPhoto())) {
+                    cameraReady = true;
+                }
+            }
+        });
 
         // Receive : Gimbal
         Gimbal gimbal = getGimbalInstance();
@@ -268,7 +291,8 @@ public class LocalMissionView extends RelativeLayout
                 textViewListenerHeading.setText(getContext().getString(R.string.listener_heading,heading_real));
                 textViewListenerVStick.setText(getContext().getString(R.string.listener_vstick,vstickPitch,vstickRoll,vstickYaw,vstickThrottle));
                 if (localMission != null) {
-                    textViewListenerMissionState.setText(getContext().getString(R.string.listener_mission_state,localMission.missionState));
+                    String stateText = localMission.missionState + "\n" + localMission.getCurrentEvent().eventState;
+                    textViewListenerMissionState.setText(getContext().getString(R.string.listener_mission_state,stateText));
                 }
 
             }
@@ -283,6 +307,12 @@ public class LocalMissionView extends RelativeLayout
         // Move to next mission event if necessary
         if (localMission.getCurrentEvent().eventState == LocalMissionEventState.FINISHED) {
             localMission.advance();
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    textViewMissionList.setText(localMission.toString());
+                }
+            });
         }
 
         // Execute on current mission event
@@ -294,9 +324,11 @@ public class LocalMissionView extends RelativeLayout
                 break;
             case AIM_AT:
                 break;
-            case PHOTO:
-                eventPHOTO(lmEvent.data0);
+            case GIMBAL:
+                eventGIMBAL(lmEvent.data0);
                 break;
+            case PHOTO:
+                eventPHOTO();
             case ALTITUDE:
                 break;
             case ALIGN:
@@ -326,7 +358,7 @@ public class LocalMissionView extends RelativeLayout
     }
 
 
-    private void eventPHOTO(float angle) {
+    private void eventGIMBAL(float angle) {
         Gimbal gimbal = getGimbalInstance();
         if (gimbal == null) {
             return;
@@ -334,11 +366,11 @@ public class LocalMissionView extends RelativeLayout
 
         // Rotation Finished, continue
         if (Math.abs(gimbal_pitch_real - angle) < 1) {
-            shootPhoto();
+            localMission.getCurrentEvent().eventState = LocalMissionEventState.FINISHED;
         }
         // Else Begin Rotation
         else if (localMission.getCurrentEvent().eventState == LocalMissionEventState.START) {
-            System.out.println("Rotat to " + angle);
+            System.out.println("Rotate to " + angle);
             if (angle > 30 || angle < -90) {
                 System.out.println("Bad angle to gimbal");
                 return;
@@ -359,11 +391,9 @@ public class LocalMissionView extends RelativeLayout
 
     }
 
-    /**
-     * Called as callback from gimbal rotation. Sets the PHOTO event to finished as callback
-     */
-    public void shootPhoto() {
-        if (isCameraAvailable()) {
+
+    private void eventPHOTO() {
+        if (isCameraAvailable() && cameraReady && localMission.getCurrentEvent().eventState == LocalMissionEventState.START) {
             Camera camera = DJISampleApplication.getProductInstance().getCamera();
             camera.startShootPhoto(new CommonCallbacks.CompletionCallback() {
                 @Override
@@ -373,9 +403,20 @@ public class LocalMissionView extends RelativeLayout
                     } else {
                         ToastUtils.setResultToToast(djiError.getDescription());
                     }
-                    localMission.getCurrentEvent().eventState = LocalMissionEventState.FINISHED;
+                    System.out.println("Shoot");
+
+                    final Handler handler = new Handler(Looper.getMainLooper());
+                    handler.postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            localMission.getCurrentEvent().eventState = LocalMissionEventState.FINISHED;
+                        }
+                    }, 1500);
+
                 }
             });
+            localMission.getCurrentEvent().eventState = LocalMissionEventState.RUNNING;
+            cameraReady = false;
         }
     }
 
