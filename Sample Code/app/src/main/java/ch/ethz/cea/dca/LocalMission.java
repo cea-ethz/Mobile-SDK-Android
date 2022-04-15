@@ -11,6 +11,10 @@ public class LocalMission {
 
     public ArrayList<LocalMissionEvent> events;
 
+    private int position = 0;
+
+    private boolean finished = false;
+
     /**
      * Empty Mission
      */
@@ -37,23 +41,25 @@ public class LocalMission {
         catch(Exception e) {
             System.out.println(e);
         }
-
-
     }
 
-    public void loadDemoMission() {
-        events = new ArrayList<LocalMissionEvent>();
-        events.add(new LocalMissionEvent(GO_TO,10,0));
-        events.add(new LocalMissionEvent(GO_TO,10,10));
-        events.add(new LocalMissionEvent(GO_TO,0,10));
-        events.add(new LocalMissionEvent(GO_TO,0,0));
+    public LocalMissionEvent getCurrentEvent() {
+        return events.get(position);
+    }
+
+    public void advance() {
+        position += 1;
+        if (position >= events.size()) {
+            finished = true;
+        }
     }
 
     @Override
     public String toString() {
         String out = "";
-        for (LocalMissionEvent event : events) {
-            out += event.eventType;
+        for (int i = 0; i < events.size(); i++) {
+            LocalMissionEvent event = events.get(i);
+            out += String.format("%03d",i) + " " + event.eventType;
             out += "\n";
         }
         return(out);

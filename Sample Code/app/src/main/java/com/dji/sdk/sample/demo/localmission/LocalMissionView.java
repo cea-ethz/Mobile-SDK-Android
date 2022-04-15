@@ -46,10 +46,8 @@ import dji.sdk.sdkmanager.DJISDKManager;
 
 import static com.google.android.gms.internal.zzahn.runOnUiThread;
 
-import org.json.JSONObject;
-
-import javax.vecmath.Point3f;
-import javax.vecmath.Vector3f;
+import javax.vecmath.Point2f;
+import javax.vecmath.Vector2f;
 
 public class LocalMissionView extends RelativeLayout
         implements View.OnClickListener, CompoundButton.OnCheckedChangeListener, PresentableView {
@@ -60,12 +58,12 @@ public class LocalMissionView extends RelativeLayout
 
     private float heading_real;
 
-    private float pitch;
-    private float roll;
-    private float yaw;
-    private float throttle;
+    private float vstickPitch;
+    private float vstickRoll;
+    private float vstickYaw;
+    private float vstickThrottle;
 
-    private Point3f positionEstimated;
+    private Point2f positionEstimated;
 
     private final float controllerUpdateTime = 0.1f;
 
@@ -91,28 +89,30 @@ public class LocalMissionView extends RelativeLayout
         super(context);
         init(context);
 
-        positionEstimated = new Point3f();
+        positionEstimated = new Point2f();
     }
 
     private void init(Context context) {
         LayoutInflater layoutInflater = (LayoutInflater) context.getSystemService(Service.LAYOUT_INFLATER_SERVICE);
         layoutInflater.inflate(R.layout.view_local_mission, this, true);
 
-        //initAllKeys();
         initUI();
     }
 
     private void initUI() {
+        // Camera
         primaryCoverView = findViewById(R.id.primary_cover_view);
         primaryVideoFeed = (VideoFeedView) findViewById(R.id.primary_video_feed);
         primaryVideoFeed.setCoverView(primaryCoverView);
 
+        // Flight info text displays
         textViewListenerHeading = (TextView) findViewById(R.id.text_heading);
         textViewListenerVelocity = (TextView) findViewById(R.id.text_velocity);
         textViewListenerPositionEstimated = (TextView) findViewById(R.id.text_position_estimated);
         textViewListenerPositionGPS = (TextView) findViewById(R.id.text_position_gps);
         textViewMissionList = (TextView) findViewById(R.id.lm_list_text);
 
+        // Buttons
         findViewById(R.id.btn_mission_load).setOnClickListener(this);
     }
 
@@ -155,7 +155,7 @@ public class LocalMissionView extends RelativeLayout
 
 
     private void setUpListeners() {
-        // Camera
+        // Receive : Camera
         sourceListener = new VideoFeeder.PhysicalSourceListener() {
             @Override
             public void onChange(VideoFeeder.VideoFeed videoFeed, PhysicalSource newPhysicalSource) {
@@ -163,7 +163,7 @@ public class LocalMissionView extends RelativeLayout
         };
         setVideoFeederListeners(true);
 
-        // FlightController
+        // Receive : FlightController
         if (ModuleVerificationUtil.isFlightControllerAvailable()) {
             FlightController flightController =
                     ((Aircraft) DJISampleApplication.getProductInstance()).getFlightController();
@@ -171,46 +171,19 @@ public class LocalMissionView extends RelativeLayout
             flightController.setStateCallback(new FlightControllerState.Callback() {
                 @Override
                 public void onUpdate(@NonNull FlightControllerState djiFlightControllerCurrentState) {
-                    // Compass
-                    if (null != compass) {
-                        heading_real = compass.getHeading();
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                textViewListenerHeading.setText(getContext().getString(R.string.listener_heading,heading_real));
-                            }
-                        });
-                    }
-                    // Velocity, Estimated Position (Basic), Position (GPS)
-                    float vx = djiFlightControllerCurrentState.getVelocityX();
-                    float vy = djiFlightControllerCurrentState.getVelocityY();
-                    float vz = djiFlightControllerCurrentState.getVelocityZ();
-
-                    Vector3f velocity = new Vector3f(vx,vy,vz);
-
-                    Vector3f scaledVelocity = new Vector3f(velocity);
-                    scaledVelocity.scale(controllerUpdateTime);
-
-                    positionEstimated.add(scaledVelocity);
-
-                    LocationCoordinate3D positionGPS = djiFlightControllerCurrentState.getAircraftLocation();
-                    GPSSignalLevel signalLevel = djiFlightControllerCurrentState.getGPSSignalLevel();
-
-
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            textViewListenerVelocity.setText(getContext().getString(R.string.listener_velocity,vx,vy,vz));
-                            textViewListenerPositionEstimated.setText(getContext().getString(R.string.listener_position,positionEstimated.x,positionEstimated.y));
-                            textViewListenerPositionGPS.setText(getContext().getString(R.string.listener_gps,signalLevel, positionGPS.getLatitude(),positionGPS.getLongitude()));
-                        }
-                    });
-
+                    runMission();
+                    updateFightInfo(djiFlightControllerCurrentState);
                 }
             });
             if (ModuleVerificationUtil.isCompassAvailable()) {
                 compass = flightController.getCompass();
             }
+        }
+        // Send : VStick
+        if (null == sendVirtualStickDataTimer) {
+            sendVirtualStickDataTask = new LocalMissionView.SendVirtualStickDataTask();
+            sendVirtualStickDataTimer = new Timer();
+            sendVirtualStickDataTimer.schedule(sendVirtualStickDataTask, 0, 100);
         }
     }
 
@@ -235,6 +208,68 @@ public class LocalMissionView extends RelativeLayout
                 VideoFeeder.getInstance().removePhysicalSourceListener(sourceListener);
                 VideoFeeder.getInstance().getPrimaryVideoFeed().removeVideoDataListener(primaryVideoDataListener);
             }
+        }
+    }
+
+    private void updateFightInfo(FlightControllerState djiFlightControllerCurrentState) {
+        // Read from Compass
+        if (null != compass) {
+            heading_real = compass.getHeading();
+        }
+
+        // Read from FC State about Velocity, Estimated Position (Basic), Position (GPS)
+        float vx = djiFlightControllerCurrentState.getVelocityX();
+        float vy = djiFlightControllerCurrentState.getVelocityY();
+        float vz = djiFlightControllerCurrentState.getVelocityZ();
+
+        Vector2f velocity = new Vector2f(vx,vy);
+
+        Vector2f scaledVelocity = new Vector2f(velocity);
+        scaledVelocity.scale(controllerUpdateTime);
+
+        positionEstimated.add(scaledVelocity);
+
+        LocationCoordinate3D positionGPS = djiFlightControllerCurrentState.getAircraftLocation();
+        GPSSignalLevel signalLevel = djiFlightControllerCurrentState.getGPSSignalLevel();
+
+        // Update UI Elements
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                textViewListenerVelocity.setText(getContext().getString(R.string.listener_velocity,vx,vy,vz));
+                textViewListenerPositionEstimated.setText(getContext().getString(R.string.listener_position,positionEstimated.x,positionEstimated.y));
+                textViewListenerPositionGPS.setText(getContext().getString(R.string.listener_gps,signalLevel, positionGPS.getLatitude(),positionGPS.getLongitude()));
+                textViewListenerHeading.setText(getContext().getString(R.string.listener_heading,heading_real));
+            }
+        });
+    }
+
+    private void runMission() {
+        LocalMissionEvent lmEvent = localMission.getCurrentEvent();
+        switch(lmEvent.eventType) {
+            case GO_TO:
+                Vector2f vec = new Vector2f(lmEvent.data0,lmEvent.data1);
+                vec.sub(positionEstimated);
+                float d = vec.length();
+                if (d < 0.5) {
+
+                }
+                vec.normalize();
+                vec.scale(0.1f);
+                vstickPitch = vec.x;
+                vstickRoll = vec.y;
+                break;
+            case AIM_AT:
+                break;
+            case PHOTO:
+                break;
+            case ALTITUDE:
+                break;
+            case ALIGN:
+                break;
+            default:
+                System.out.println("Unhandled event type : " + lmEvent.eventType);
+                break;
         }
     }
 
@@ -328,10 +363,10 @@ public class LocalMissionView extends RelativeLayout
             if (ModuleVerificationUtil.isFlightControllerAvailable()) {
                 DJISampleApplication.getAircraftInstance()
                         .getFlightController()
-                        .sendVirtualStickFlightControlData(new FlightControlData(pitch,
-                                        roll,
-                                        yaw,
-                                        throttle),
+                        .sendVirtualStickFlightControlData(new FlightControlData(vstickPitch,
+                                        vstickRoll,
+                                        vstickYaw,
+                                        vstickThrottle),
                                 new CommonCallbacks.CompletionCallback() {
                                     @Override
                                     public void onResult(DJIError djiError) {
