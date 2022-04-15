@@ -82,6 +82,7 @@ public class LocalMissionView extends RelativeLayout
     private TextView textViewListenerHeading;
     private TextView textViewListenerVelocity;
     private TextView textViewListenerPositionEstimated;
+    private TextView textViewListenerVStick;
     private TextView textViewListenerPositionGPS;
 
     private TextView textViewMissionList;
@@ -110,6 +111,7 @@ public class LocalMissionView extends RelativeLayout
         textViewListenerHeading = (TextView) findViewById(R.id.text_heading);
         textViewListenerVelocity = (TextView) findViewById(R.id.text_velocity);
         textViewListenerPositionEstimated = (TextView) findViewById(R.id.text_position_estimated);
+        textViewListenerVStick = (TextView) findViewById(R.id.text_vstick);
         textViewListenerPositionGPS = (TextView) findViewById(R.id.text_position_gps);
         textViewMissionList = (TextView) findViewById(R.id.lm_list_text);
 
@@ -244,6 +246,7 @@ public class LocalMissionView extends RelativeLayout
                 textViewListenerPositionEstimated.setText(getContext().getString(R.string.listener_position,positionEstimated.x,positionEstimated.y));
                 textViewListenerPositionGPS.setText(getContext().getString(R.string.listener_gps,signalLevel, positionGPS.getLatitude(),positionGPS.getLongitude()));
                 textViewListenerHeading.setText(getContext().getString(R.string.listener_heading,heading_real));
+                textViewListenerVStick.setText(getContext().getString(R.string.listener_vstick,vstickPitch,vstickRoll,vstickYaw,vstickThrottle));
             }
         });
     }
