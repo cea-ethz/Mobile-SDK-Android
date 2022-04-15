@@ -32,8 +32,14 @@ public class LocalMission {
             for (int i = 0; i < jsonEvents.length(); i++) {
                 JSONObject eventObj = jsonEvents.getJSONObject(i);
                 String eventType = eventObj.getString("type");
-                float data0 = (float)eventObj.getDouble("data0");
-                float data1 = (float)eventObj.getDouble("data1");
+                float data0 = 0;
+                float data1 = 0;
+                if (eventObj.has("data0")) {
+                    data0 = (float)eventObj.getDouble("data0");
+                }
+                if (eventObj.has("data1")) {
+                    data1 = (float)eventObj.getDouble("data1");
+                }
                 LocalMissionEvent event = new LocalMissionEvent(LocalMissionEventType.valueOf(eventType),data0,data1);
                 events.add(event);
             }
@@ -51,7 +57,12 @@ public class LocalMission {
         position += 1;
         if (position >= events.size()) {
             missionState = LocalMissionState.FINISHED;
+            position = events.size() - 1;
         }
+        else {
+            events.get(position).eventState = LocalMissionEventState.START;
+        }
+
     }
 
     @Override

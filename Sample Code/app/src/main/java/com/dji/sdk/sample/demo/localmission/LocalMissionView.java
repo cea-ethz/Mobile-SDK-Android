@@ -4,7 +4,6 @@ import android.app.Service;
 import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.widget.CompoundButton;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
@@ -34,6 +33,9 @@ import dji.common.flightcontroller.FlightControllerState;
 import dji.common.flightcontroller.GPSSignalLevel;
 import dji.common.flightcontroller.LocationCoordinate3D;
 import dji.common.flightcontroller.virtualstick.*;
+import dji.common.gimbal.GimbalState;
+import dji.common.gimbal.Rotation;
+import dji.common.gimbal.RotationMode;
 import dji.common.util.CommonCallbacks;
 
 import dji.sdk.base.BaseProduct;
@@ -41,6 +43,7 @@ import dji.sdk.camera.Camera;
 import dji.sdk.camera.VideoFeeder;
 import dji.sdk.flightcontroller.Compass;
 import dji.sdk.flightcontroller.FlightController;
+import dji.sdk.gimbal.Gimbal;
 import dji.sdk.media.MediaFile;
 import dji.sdk.products.Aircraft;
 import dji.sdk.sdkmanager.DJISDKManager;
@@ -55,9 +58,11 @@ public class LocalMissionView extends RelativeLayout
 
     private LocalMission localMission;
 
+    private Gimbal gimbal = null;
     private Compass compass;
 
     private float heading_real;
+    private float gimbal_pitch_real = 0;
 
     private float vstickPitch = 0;
     private float vstickRoll = 0;
@@ -176,7 +181,16 @@ public class LocalMissionView extends RelativeLayout
         };
         setVideoFeederListeners(true);
 
-        // Receive : FlightController
+        // Receive : Gimbal
+        Gimbal gimbal = getGimbalInstance();
+        gimbal.setStateCallback(new GimbalState.Callback() {
+            @Override
+            public void onUpdate(final GimbalState state) {
+                gimbal_pitch_real = state.getAttitudeInDegrees().getPitch();
+            }
+        });
+
+        // Receive : FlightController - 10hz
         if (ModuleVerificationUtil.isFlightControllerAvailable()) {
             FlightController flightController =
                     ((Aircraft) DJISampleApplication.getProductInstance()).getFlightController();
@@ -185,7 +199,7 @@ public class LocalMissionView extends RelativeLayout
                 @Override
                 public void onUpdate(@NonNull FlightControllerState djiFlightControllerCurrentState) {
                     runMission();
-                    updateFightInfo(djiFlightControllerCurrentState);
+                    updateFlightInfo(djiFlightControllerCurrentState);
                 }
             });
             if (ModuleVerificationUtil.isCompassAvailable()) {
@@ -197,8 +211,6 @@ public class LocalMissionView extends RelativeLayout
         sendVirtualStickDataTask = new LocalMissionView.SendVirtualStickDataTask();
         sendVirtualStickDataTimer = new Timer();
         sendVirtualStickDataTimer.schedule(sendVirtualStickDataTask, 100, 100);
-
-
     }
 
     private void tearDownListeners() {
@@ -225,7 +237,7 @@ public class LocalMissionView extends RelativeLayout
         }
     }
 
-    private void updateFightInfo(FlightControllerState djiFlightControllerCurrentState) {
+    private void updateFlightInfo(FlightControllerState djiFlightControllerCurrentState) {
         // Read from Compass
         if (null != compass) {
             heading_real = compass.getHeading();
@@ -267,23 +279,23 @@ public class LocalMissionView extends RelativeLayout
         if (localMission == null || localMission.missionState != LocalMissionState.RUNNING) {
             return;
         }
+
+        // Move to next mission event if necessary
+        if (localMission.getCurrentEvent().eventState == LocalMissionEventState.FINISHED) {
+            localMission.advance();
+        }
+
+        // Execute on current mission event
         LocalMissionEvent lmEvent = localMission.getCurrentEvent();
+        System.out.println(lmEvent.eventState);
         switch(lmEvent.eventType) {
             case GO_TO:
-                Vector2f vec = new Vector2f(lmEvent.data0,lmEvent.data1);
-                vec.sub(positionEstimated);
-                float d = vec.length();
-                if (d < 0.5) {
-                    localMission.advance();
-                }
-                vec.normalize();
-                vec.scale(1f);
-                vstickPitch = vec.x;
-                vstickRoll = vec.y;
+                eventGOTO(lmEvent.data0,lmEvent.data1);
                 break;
             case AIM_AT:
                 break;
             case PHOTO:
+                eventPHOTO(lmEvent.data0);
                 break;
             case ALTITUDE:
                 break;
@@ -292,6 +304,78 @@ public class LocalMissionView extends RelativeLayout
             default:
                 System.out.println("Unhandled event type : " + lmEvent.eventType);
                 break;
+        }
+    }
+
+
+    private void eventGOTO(float x, float y) {
+        Vector2f vec = new Vector2f(x,y);
+        vec.sub(positionEstimated);
+        float d = vec.length();
+        if (d < 0.5) {
+            localMission.getCurrentEvent().eventState = LocalMissionEventState.FINISHED;
+            vstickPitch = 0;
+            vstickRoll = 0;
+        }
+        else {
+            vec.normalize();
+            vec.scale(1f);
+            vstickPitch = vec.x;
+            vstickRoll = vec.y;
+        }
+    }
+
+
+    private void eventPHOTO(float angle) {
+        Gimbal gimbal = getGimbalInstance();
+        if (gimbal == null) {
+            return;
+        }
+
+        // Rotation Finished, continue
+        if (Math.abs(gimbal_pitch_real - angle) < 1) {
+            shootPhoto();
+        }
+        // Else Begin Rotation
+        else if (localMission.getCurrentEvent().eventState == LocalMissionEventState.START) {
+            System.out.println("Rotat to " + angle);
+            if (angle > 30 || angle < -90) {
+                System.out.println("Bad angle to gimbal");
+                return;
+            }
+            Rotation.Builder builder = new Rotation.Builder().mode(RotationMode.ABSOLUTE_ANGLE).time(0.5);
+            builder.pitch(angle);
+
+            gimbal.rotate(builder.build(), new CommonCallbacks.CompletionCallback() {
+                @Override
+                public void onResult(DJIError djiError) {
+                }
+            });
+
+            localMission.getCurrentEvent().eventState = LocalMissionEventState.RUNNING;
+        }
+        // Else wait while rotation occurs
+
+
+    }
+
+    /**
+     * Called as callback from gimbal rotation. Sets the PHOTO event to finished as callback
+     */
+    public void shootPhoto() {
+        if (isCameraAvailable()) {
+            Camera camera = DJISampleApplication.getProductInstance().getCamera();
+            camera.startShootPhoto(new CommonCallbacks.CompletionCallback() {
+                @Override
+                public void onResult(DJIError djiError) {
+                    if (null == djiError) {
+                        ToastUtils.setResultToToast(getContext().getString(R.string.success));
+                    } else {
+                        ToastUtils.setResultToToast(djiError.getDescription());
+                    }
+                    localMission.getCurrentEvent().eventState = LocalMissionEventState.FINISHED;
+                }
+            });
         }
     }
 
@@ -314,8 +398,6 @@ public class LocalMissionView extends RelativeLayout
                         flightController.setRollPitchControlMode(RollPitchControlMode.VELOCITY);
                         flightController.setYawControlMode(YawControlMode.ANGLE);
                         flightController.setRollPitchCoordinateSystem(FlightCoordinateSystem.GROUND);
-
-
 
                         // Advanced mode allows for GPS-stabilized hovering, and collision avoidance
                         // if desired
@@ -351,6 +433,7 @@ public class LocalMissionView extends RelativeLayout
                 break;
             case R.id.btn_mission_start:
                 localMission.missionState = LocalMissionState.RUNNING;
+                localMission.getCurrentEvent().eventState = LocalMissionEventState.START;
                 break;
         }
     }
@@ -438,5 +521,30 @@ public class LocalMissionView extends RelativeLayout
                                 });
             }
         }
+    }
+
+    private Gimbal getGimbalInstance() {
+        if (gimbal == null) {
+            initGimbal();
+        }
+        return gimbal;
+    }
+
+    private void initGimbal() {
+        if (DJISDKManager.getInstance() != null) {
+            BaseProduct product = DJISDKManager.getInstance().getProduct();
+            if (product != null) {
+                if (product instanceof Aircraft) {
+                    gimbal = ((Aircraft) product).getGimbals().get(0);
+                } else {
+                    gimbal = product.getGimbal();
+                }
+            }
+        }
+    }
+
+    private boolean isCameraAvailable() {
+        return (null != DJISampleApplication.getProductInstance()) && (null != DJISampleApplication.getProductInstance()
+                .getCamera());
     }
 }
