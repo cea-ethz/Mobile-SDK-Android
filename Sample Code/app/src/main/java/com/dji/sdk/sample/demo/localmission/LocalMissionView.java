@@ -61,37 +61,44 @@ import javax.vecmath.Vector2f;
 public class LocalMissionView extends RelativeLayout
         implements View.OnClickListener, PresentableView {
 
+    // Current mission being executed
     private LocalMission localMission;
 
+    // Hardware objects
+    private Camera camera;
     private Gimbal gimbal = null;
     private Compass compass;
 
+    // Should be true when camera is not actively capturing or storing data
     private boolean cameraReady = true;
 
+    // Pose values from direct internal measurement
     private float heading_real;
     private float gimbal_pitch_real = 0;
     private float ultrasonic_height_real = 0;
 
+    // Control data sent via the Virtual Stick interface
     private float vstickPitch = 0;
     private float vstickRoll = 0;
     private float vstickYaw = 0;
     private float vstickThrottle = 0f;
 
+    // Estimated local position as integrated from the measured velocity
     private Point2f positionEstimated;
 
+    // Frequency of the FlightControllerState callback
     private final float controllerUpdateTime = 0.1f;
 
-    private Camera camera;
-
+    // Live in-app video feed
     private VideoFeedView primaryVideoFeed;
     private VideoFeeder.PhysicalSourceListener sourceListener;
     private View primaryCoverView;
 
+    // Timing for sending commands via the Virtual Stick interface
     private Timer sendVirtualStickDataTimer;
     private SendVirtualStickDataTask sendVirtualStickDataTask;
 
     // UI Objects
-
     private TextView textViewListenerHeading;
     private TextView textViewListenerVelocity;
     private TextView textViewListenerPositionEstimated;
@@ -99,10 +106,11 @@ public class LocalMissionView extends RelativeLayout
     private TextView textViewListenerPositionGPS;
     private TextView textViewListenerMissionState;
     private TextView textViewListenerMissionError;
-
     private TextView textViewMissionList;
 
+    // Helper to track that the Vstick sending function is being called correctly, remove eventually
     private int updateCount = 0;
+
 
     public LocalMissionView(Context context) {
         super(context);
@@ -111,12 +119,14 @@ public class LocalMissionView extends RelativeLayout
         positionEstimated = new Point2f();
     }
 
+
     private void init(Context context) {
         LayoutInflater layoutInflater = (LayoutInflater) context.getSystemService(Service.LAYOUT_INFLATER_SERVICE);
         layoutInflater.inflate(R.layout.view_local_mission, this, true);
 
         initUI();
     }
+
 
     private void initUI() {
         // Camera
@@ -125,7 +135,7 @@ public class LocalMissionView extends RelativeLayout
         primaryVideoFeed.setCoverView(primaryCoverView);
 
         // Flight info text displays
-        textViewListenerHeading = (TextView) findViewById(R.id.text_heading);
+        textViewListenerHeading = (TextView) findViewById(R.id.text_pose_real);
         textViewListenerVelocity = (TextView) findViewById(R.id.text_velocity);
         textViewListenerPositionEstimated = (TextView) findViewById(R.id.text_position_estimated);
         textViewListenerVStick = (TextView) findViewById(R.id.text_vstick);
@@ -141,6 +151,7 @@ public class LocalMissionView extends RelativeLayout
         findViewById(R.id.btn_disable_virtual_stick).setOnClickListener(this);
         findViewById(R.id.btn_take_off).setOnClickListener(this);
     }
+
 
     @Override
     protected void onAttachedToWindow() {
@@ -169,6 +180,7 @@ public class LocalMissionView extends RelativeLayout
             });
         }
     }
+
 
     @Override
     protected void onDetachedFromWindow() {
@@ -238,6 +250,7 @@ public class LocalMissionView extends RelativeLayout
         sendVirtualStickDataTimer.schedule(sendVirtualStickDataTask, 100, 100);
     }
 
+
     private void tearDownListeners() {
         setVideoFeederListeners(false);
 
@@ -245,6 +258,7 @@ public class LocalMissionView extends RelativeLayout
             ((Aircraft) DJISampleApplication.getProductInstance()).getFlightController().setStateCallback(null);
         }
     }
+
 
     private void setVideoFeederListeners(boolean isOpen) {
         if (VideoFeeder.getInstance() == null) return;
@@ -261,6 +275,7 @@ public class LocalMissionView extends RelativeLayout
             }
         }
     }
+
 
     private void updateFlightInfo(FlightControllerState djiFlightControllerCurrentState) {
         // Read from Compass
@@ -307,6 +322,7 @@ public class LocalMissionView extends RelativeLayout
             }
         });
     }
+
 
     private void runMission() {
         if (localMission == null || localMission.missionState != LocalMissionState.RUNNING) {
@@ -396,8 +412,6 @@ public class LocalMissionView extends RelativeLayout
             localMission.getCurrentEvent().eventState = LocalMissionEventState.RUNNING;
         }
         // Else wait while rotation occurs
-
-
     }
 
 
@@ -428,6 +442,7 @@ public class LocalMissionView extends RelativeLayout
             cameraReady = false;
         }
     }
+
 
     @Override
     public void onClick(View v) {
@@ -537,11 +552,13 @@ public class LocalMissionView extends RelativeLayout
         return R.string.flight_controller_listview_local_mission;
     }
 
+
     @NonNull
     @Override
     public String getHint() {
         return this.getClass().getSimpleName() + ".java";
     }
+
 
     private class SendVirtualStickDataTask extends TimerTask {
         @Override
@@ -573,12 +590,14 @@ public class LocalMissionView extends RelativeLayout
         }
     }
 
+
     private Gimbal getGimbalInstance() {
         if (gimbal == null) {
             initGimbal();
         }
         return gimbal;
     }
+
 
     private void initGimbal() {
         if (DJISDKManager.getInstance() != null) {
@@ -593,6 +612,7 @@ public class LocalMissionView extends RelativeLayout
         }
     }
 
+    
     private boolean isCameraAvailable() {
         return (null != DJISampleApplication.getProductInstance()) && (null != DJISampleApplication.getProductInstance()
                 .getCamera());
