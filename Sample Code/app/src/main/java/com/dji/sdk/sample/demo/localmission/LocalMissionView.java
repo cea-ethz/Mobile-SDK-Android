@@ -309,7 +309,7 @@ public class LocalMissionView extends RelativeLayout
                 textViewListenerPositionEstimated.setText(getContext().getString(
                         R.string.listener_position,df.format(positionEstimated.x),df.format(positionEstimated.y)));
                 textViewListenerPositionGPS.setText(getContext().getString(
-                        R.string.listener_gps,signalLevel, positionGPS.getLatitude(),positionGPS.getLongitude()));
+                        R.string.listener_gps,signalLevel, positionGPS.getLatitude(),positionGPS.getLongitude(),positionGPS.getAltitude()));
                 textViewListenerHeading.setText(getContext().getString(
                         R.string.listener_pose_real,heading_real,df.format(ultrasonic_height_real)));
                 textViewListenerVStick.setText(getContext().getString(
@@ -356,6 +356,7 @@ public class LocalMissionView extends RelativeLayout
             case PHOTO:
                 eventPHOTO();
             case ALTITUDE:
+                eventALTITUDE(lmEvent.data0);
                 break;
             case ALIGN:
                 break;
@@ -457,6 +458,21 @@ public class LocalMissionView extends RelativeLayout
             localMission.getCurrentEvent().eventState = LocalMissionEventState.RUNNING;
             cameraReady = false;
         }
+    }
+
+
+    private void eventALTITUDE(float altitude) {
+        // First tick
+        if (localMission.getCurrentEvent().eventState == LocalMissionEventState.START) {
+            localMission.getCurrentEvent().eventState = LocalMissionEventState.RUNNING;
+            vstickThrottle = altitude;
+        }
+
+        // Exit tick
+        if (Math.abs((ultrasonic_height_real - 0.2) - vstickThrottle) < 0.5) {
+            localMission.getCurrentEvent().eventState = LocalMissionEventState.FINISHED;
+        }
+        // Otherwise wait while changing altitude
     }
 
 
