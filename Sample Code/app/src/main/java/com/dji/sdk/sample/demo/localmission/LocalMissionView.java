@@ -55,14 +55,18 @@ import dji.sdk.sdkmanager.DJISDKManager;
 
 import static com.google.android.gms.internal.zzahn.runOnUiThread;
 
-import javax.vecmath.Point2f;
-import javax.vecmath.Vector2f;
+import javax.vecmath.Matrix3f;
+import javax.vecmath.Vector3f;
 
 public class LocalMissionView extends RelativeLayout
         implements View.OnClickListener, PresentableView {
 
     // Current mission being executed
     private LocalMission localMission;
+
+    private float calibratedYaw = 0;
+    private Matrix3f rotationLocalToGlobal;
+    private Matrix3f rotationGlobalToLocal;
 
     // Hardware objects
     private Camera camera;
@@ -72,19 +76,26 @@ public class LocalMissionView extends RelativeLayout
     // Should be true when camera is not actively capturing or storing data
     private boolean cameraReady = true;
 
-    // Pose values from direct internal measurement
-    private float heading_real;
-    private float gimbal_pitch_real = 0;
-    private float ultrasonic_height_real = 0;
+    // Pose values from direct internal measurement - global updates local in compass callback
+    private float yawGlobal;
+    private float yawLocal;
 
-    // Control data sent via the Virtual Stick interface
-    private float vstickPitch = 0;
-    private float vstickRoll = 0;
-    private float vstickYaw = 0;
+    private float gimbalPitchReal = 0;
+    private float ultrasonicHeightReal = 0;
+
+    // Control data sent via the Virtual Stick interface - Local updates global at send time
+    private Vector3f vstickPitchRollLocal;
+    private Vector3f vstickPitchRollGlobal;
+    private float vstickYawLocal = 0;
+    private float vstickYawGlobal = 0;
     private float vstickThrottle = 1f;
 
-    // Estimated local position as integrated from the measured velocity
-    private Point2f positionEstimated;
+    // Estimated local position as integrated from the measured velocity - Global updates local in flight info callback
+    private Vector3f positionEstimatedLocal;
+    private Vector3f positionEstimatedGlobal;
+
+    private Vector3f currentVelocityLocal;
+    private Vector3f currentVelocityGlobal;
 
     // Frequency of the FlightControllerState callback
     private final float controllerUpdateTime = 0.1f;
@@ -116,7 +127,14 @@ public class LocalMissionView extends RelativeLayout
         super(context);
         init(context);
 
-        positionEstimated = new Point2f();
+        positionEstimatedLocal = new Vector3f();
+        positionEstimatedGlobal = new Vector3f();
+        vstickPitchRollLocal = new Vector3f();
+        vstickPitchRollGlobal = new Vector3f();
+
+        currentVelocityLocal = new Vector3f();
+        currentVelocityGlobal = new Vector3f();
+        calibrate(0);
     }
 
 
@@ -150,6 +168,7 @@ public class LocalMissionView extends RelativeLayout
         findViewById(R.id.btn_enable_virtual_stick).setOnClickListener(this);
         findViewById(R.id.btn_disable_virtual_stick).setOnClickListener(this);
         findViewById(R.id.btn_take_off).setOnClickListener(this);
+        findViewById(R.id.btn_calibrate).setOnClickListener(this);
     }
 
 
@@ -223,7 +242,7 @@ public class LocalMissionView extends RelativeLayout
         gimbal.setStateCallback(new GimbalState.Callback() {
             @Override
             public void onUpdate(final GimbalState state) {
-                gimbal_pitch_real = state.getAttitudeInDegrees().getPitch();
+                gimbalPitchReal = state.getAttitudeInDegrees().getPitch();
             }
         });
 
@@ -239,6 +258,7 @@ public class LocalMissionView extends RelativeLayout
                     updateFlightInfo(djiFlightControllerCurrentState);
                 }
             });
+            //TODO: This probably should be taken out of the callback
             if (ModuleVerificationUtil.isCompassAvailable()) {
                 compass = flightController.getCompass();
             }
@@ -280,7 +300,14 @@ public class LocalMissionView extends RelativeLayout
     private void updateFlightInfo(FlightControllerState djiFlightControllerCurrentState) {
         // Read from Compass
         if (null != compass) {
-            heading_real = compass.getHeading();
+            yawGlobal = compass.getHeading();
+            yawLocal = yawGlobal - calibratedYaw;
+            if (yawLocal < 180) {
+                yawLocal += 360;
+            }
+            if (yawLocal > 180) {
+                yawLocal -= 360;
+            }
         }
 
         // Read from FC State about Velocity, Estimated Position (Basic), Position (GPS)
@@ -288,16 +315,19 @@ public class LocalMissionView extends RelativeLayout
         float vy = djiFlightControllerCurrentState.getVelocityY();
         float vz = djiFlightControllerCurrentState.getVelocityZ();
 
-        Vector2f velocity = new Vector2f(vx,vy);
+        currentVelocityGlobal.set(vx,vy,vz);
+        rotationGlobalToLocal.transform(currentVelocityGlobal,currentVelocityLocal);
 
-        Vector2f scaledVelocity = new Vector2f(velocity);
+        Vector3f scaledVelocity = new Vector3f(currentVelocityGlobal);
         scaledVelocity.scale(controllerUpdateTime);
 
-        positionEstimated.add(scaledVelocity);
+        positionEstimatedGlobal.add(scaledVelocity);
+        rotationGlobalToLocal.transform(positionEstimatedGlobal,positionEstimatedLocal);
+
 
         LocationCoordinate3D positionGPS = djiFlightControllerCurrentState.getAircraftLocation();
         GPSSignalLevel signalLevel = djiFlightControllerCurrentState.getGPSSignalLevel();
-        ultrasonic_height_real = djiFlightControllerCurrentState.getUltrasonicHeightInMeters();
+        ultrasonicHeightReal = djiFlightControllerCurrentState.getUltrasonicHeightInMeters();
 
         // Update UI Elements
         runOnUiThread(new Runnable() {
@@ -305,15 +335,18 @@ public class LocalMissionView extends RelativeLayout
             public void run() {
                 DecimalFormat df = new DecimalFormat("0.000");
                 textViewListenerVelocity.setText(getContext().getString(
-                        R.string.listener_velocity,df.format(vx),df.format(vy),df.format(vz)));
+                        R.string.listener_velocity,
+                        df.format(currentVelocityLocal.x),
+                        df.format(currentVelocityLocal.y),
+                        df.format(currentVelocityLocal.z)));
                 textViewListenerPositionEstimated.setText(getContext().getString(
-                        R.string.listener_position,df.format(positionEstimated.x),df.format(positionEstimated.y)));
+                        R.string.listener_position,df.format(positionEstimatedLocal.x),df.format(positionEstimatedLocal.y)));
                 textViewListenerPositionGPS.setText(getContext().getString(
                         R.string.listener_gps,signalLevel, positionGPS.getLatitude(),positionGPS.getLongitude(),positionGPS.getAltitude()));
                 textViewListenerHeading.setText(getContext().getString(
-                        R.string.listener_pose_real,heading_real,df.format(ultrasonic_height_real)));
+                        R.string.listener_pose_real, yawLocal,df.format(ultrasonicHeightReal)));
                 textViewListenerVStick.setText(getContext().getString(
-                        R.string.listener_vstick,df.format(vstickPitch),df.format(vstickRoll),df.format(vstickYaw),df.format(vstickThrottle)));
+                        R.string.listener_vstick,df.format(vstickPitchRollLocal.x),df.format(vstickPitchRollLocal.y),df.format(vstickYawLocal),df.format(vstickThrottle)));
                 if (localMission != null) {
                     String stateText = localMission.missionState + "\n" + localMission.getCurrentEvent().eventState;
                     textViewListenerMissionState.setText(getContext().getString(R.string.listener_mission_state,stateText));
@@ -368,19 +401,21 @@ public class LocalMissionView extends RelativeLayout
 
 
     private void eventGOTO(float x, float y) {
-        Vector2f vec = new Vector2f(x,y);
-        vec.sub(positionEstimated);
+        Vector3f vec = new Vector3f(x,y,0);
+        vec.sub(positionEstimatedLocal);
+        vec.z = 0;
         float d = vec.length();
         if (d < 0.5) {
+            vstickPitchRollLocal.x = 0;
+            vstickPitchRollLocal.y = 0;
             localMission.getCurrentEvent().eventState = LocalMissionEventState.FINISHED;
-            vstickPitch = 0;
-            vstickRoll = 0;
         }
         else {
             vec.normalize();
             vec.scale(1f);
-            vstickPitch = vec.y;
-            vstickRoll = vec.x;
+            vstickPitchRollLocal.y = vec.x;
+            vstickPitchRollLocal.x = vec.y;
+            localMission.getCurrentEvent().eventState = LocalMissionEventState.RUNNING;
         }
     }
 
@@ -389,11 +424,11 @@ public class LocalMissionView extends RelativeLayout
         // First tick
         if (localMission.getCurrentEvent().eventState == LocalMissionEventState.START) {
             localMission.getCurrentEvent().eventState = LocalMissionEventState.RUNNING;
-            vstickYaw = angle;
+            vstickYawLocal = angle;
         }
 
         // Exit tick
-        if (Math.abs(heading_real - vstickYaw) < 1) {
+        if (Math.abs(yawGlobal - vstickYawLocal) < 1) {
             localMission.getCurrentEvent().eventState = LocalMissionEventState.FINISHED;
         }
         // Otherwise wait while rotating
@@ -407,7 +442,7 @@ public class LocalMissionView extends RelativeLayout
         }
 
         // Rotation Finished, continue
-        if (Math.abs(gimbal_pitch_real - angle) < 1) {
+        if (Math.abs(gimbalPitchReal - angle) < 1) {
             localMission.getCurrentEvent().eventState = LocalMissionEventState.FINISHED;
         }
         // Else Begin Rotation
@@ -469,7 +504,7 @@ public class LocalMissionView extends RelativeLayout
         }
 
         // Exit tick
-        if (Math.abs((ultrasonic_height_real - 0.2) - vstickThrottle) < 0.5) {
+        if (Math.abs((ultrasonicHeightReal - 0.2) - vstickThrottle) < 0.5) {
             localMission.getCurrentEvent().eventState = LocalMissionEventState.FINISHED;
         }
         // Otherwise wait while changing altitude
@@ -532,14 +567,21 @@ public class LocalMissionView extends RelativeLayout
                 localMission.missionState = LocalMissionState.RUNNING;
                 localMission.getCurrentEvent().eventState = LocalMissionEventState.START;
                 break;
+            case R.id.btn_mission_stop:
+                localMission.missionState = LocalMissionState.FINISHED;
+                break;
+            case R.id.btn_calibrate:
+                calibrate(yawGlobal);
+                break;
+
         }
     }
 
 
     private void loadMission() {
         //TODO: Make this not hardcoded
-        //String urlString = "http://192.168.0.164:8000/mission.json"; // Wifi
-        String urlString = "http://192.168.80.121:8000/mission.json"; // Hotspot
+        String urlString = "http://192.168.0.164:8000/mission.json"; // Wifi
+        //String urlString = "http://192.168.80.121:8000/mission.json"; // Hotspot
 
         try {
             HttpURLConnection urlConnection = null;
@@ -578,6 +620,20 @@ public class LocalMissionView extends RelativeLayout
         }
     }
 
+    public void calibrate(float calibrationAngle) {
+        calibratedYaw = calibrationAngle;
+        float aR = (float)Math.toRadians(calibratedYaw);
+        rotationLocalToGlobal = new Matrix3f(
+                (float)Math.cos(aR), (float)-Math.sin(aR),0,
+                (float)Math.sin(aR), (float)Math.cos(aR),0,
+                0,0,1);
+
+        rotationGlobalToLocal = new Matrix3f(
+                (float)Math.cos(-aR), (float)-Math.sin(-aR),0,
+                (float)Math.sin(-aR), (float)Math.cos(-aR),0,
+                0,0,1);
+    }
+
 
     @Override
     public int getDescription() {
@@ -596,12 +652,13 @@ public class LocalMissionView extends RelativeLayout
         @Override
         public void run() {
             if (ModuleVerificationUtil.isFlightControllerAvailable()) {
-
+                rotationLocalToGlobal.transform(vstickPitchRollLocal,vstickPitchRollGlobal);
+                vstickYawGlobal = vstickYawLocal + calibratedYaw;
                 DJISampleApplication.getAircraftInstance()
                         .getFlightController()
-                        .sendVirtualStickFlightControlData(new FlightControlData(vstickPitch,
-                                        vstickRoll,
-                                        vstickYaw,
+                        .sendVirtualStickFlightControlData(new FlightControlData(vstickPitchRollGlobal.x,
+                                        vstickPitchRollLocal.y,
+                                        vstickYawLocal,
                                         vstickThrottle),
                                 new CommonCallbacks.CompletionCallback() {
                                     @Override

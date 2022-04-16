@@ -146,13 +146,13 @@
     set_get_ocusync_airlink_channel_description
 
     <!-- Local Mission View -->
-    <string name="listener_pose_real">Heading: %1$f\nUS-Height: %2$s</string>
-    <string name="listener_velocity">Velocity: \n X: %1$s Y: %2$s Z: %3$s </string>
-    <string name="listener_position">Estimated Position:\n X: %1$s Y: %2$s</string>
-    <string name="listener_vstick">VStick:\n P: %1$s R: %2$s Y: %3$s T: %4$s</string>
-    <string name="listener_gps">GPS Signal: %1$s\n Lat: %2$f Lon: %3$f\nAlt: %3$f</string>
-    <string name="listener_mission_state">Mission State: %1$s</string>
-    <string name="listener_mission_error">Mission Error: %1$s</string>
+    <string name="listener_pose_real"><b>Heading:</b> %1$f\n<b>US-Height:</b> %2$s</string>
+    <string name="listener_velocity"><b>Velocity:</b> \n X: %1$s Y: %2$s Z: %3$s </string>
+    <string name="listener_position"><b>Estimated Position:</b>\n X: %1$s Y: %2$s</string>
+    <string name="listener_vstick"><b>VStick:</b>\n P: %1$s R: %2$s Y: %3$s \nT: %4$s</string>
+    <string name="listener_gps"><b>GPS Signal:</b> %1$s\n Lat: %2$f Lon: %3$f\nAlt: %3$f</string>
+    <string name="listener_mission_state"><b>Mission State:</b> %1$s</string>
+    <string name="listener_mission_error"><b>Mission Error:</b> %1$s</string>
 
 
 
