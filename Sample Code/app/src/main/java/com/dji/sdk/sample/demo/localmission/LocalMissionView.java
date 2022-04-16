@@ -81,7 +81,7 @@ public class LocalMissionView extends RelativeLayout
     private float vstickPitch = 0;
     private float vstickRoll = 0;
     private float vstickYaw = 0;
-    private float vstickThrottle = 0f;
+    private float vstickThrottle = 1f;
 
     // Estimated local position as integrated from the measured velocity
     private Point2f positionEstimated;
@@ -377,8 +377,8 @@ public class LocalMissionView extends RelativeLayout
         else {
             vec.normalize();
             vec.scale(1f);
-            vstickPitch = vec.x;
-            vstickRoll = vec.y;
+            vstickPitch = vec.y;
+            vstickRoll = vec.x;
         }
     }
 
@@ -506,8 +506,8 @@ public class LocalMissionView extends RelativeLayout
 
     private void loadMission() {
         //TODO: Make this not hardcoded
-        String urlString = "http://192.168.0.164:8000/mission.json"; // Wifi
-        //String urlString = "http://192.168.80.121:8000/mission.json"; // Hotspot
+        //String urlString = "http://192.168.0.164:8000/mission.json"; // Wifi
+        String urlString = "http://192.168.80.121:8000/mission.json"; // Hotspot
 
         try {
             HttpURLConnection urlConnection = null;
@@ -612,9 +612,9 @@ public class LocalMissionView extends RelativeLayout
         }
     }
 
-    
+
     private boolean isCameraAvailable() {
-        return (null != DJISampleApplication.getProductInstance()) && (null != DJISampleApplication.getProductInstance()
-                .getCamera());
+        return (null != DJISampleApplication.getProductInstance()) &&
+                (null != DJISampleApplication.getProductInstance().getCamera());
     }
 }
