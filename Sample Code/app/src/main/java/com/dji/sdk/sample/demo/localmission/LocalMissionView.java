@@ -23,6 +23,7 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.text.DecimalFormat;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -69,6 +70,7 @@ public class LocalMissionView extends RelativeLayout
 
     private float heading_real;
     private float gimbal_pitch_real = 0;
+    private float ultrasonic_height_real = 0;
 
     private float vstickPitch = 0;
     private float vstickRoll = 0;
@@ -280,16 +282,23 @@ public class LocalMissionView extends RelativeLayout
 
         LocationCoordinate3D positionGPS = djiFlightControllerCurrentState.getAircraftLocation();
         GPSSignalLevel signalLevel = djiFlightControllerCurrentState.getGPSSignalLevel();
+        ultrasonic_height_real = djiFlightControllerCurrentState.getUltrasonicHeightInMeters();
 
         // Update UI Elements
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                textViewListenerVelocity.setText(getContext().getString(R.string.listener_velocity,vx,vy,vz));
-                textViewListenerPositionEstimated.setText(getContext().getString(R.string.listener_position,positionEstimated.x,positionEstimated.y));
-                textViewListenerPositionGPS.setText(getContext().getString(R.string.listener_gps,signalLevel, positionGPS.getLatitude(),positionGPS.getLongitude()));
-                textViewListenerHeading.setText(getContext().getString(R.string.listener_heading,heading_real));
-                textViewListenerVStick.setText(getContext().getString(R.string.listener_vstick,vstickPitch,vstickRoll,vstickYaw,vstickThrottle));
+                DecimalFormat df = new DecimalFormat("0.000");
+                textViewListenerVelocity.setText(getContext().getString(
+                        R.string.listener_velocity,df.format(vx),df.format(vy),df.format(vz)));
+                textViewListenerPositionEstimated.setText(getContext().getString(
+                        R.string.listener_position,df.format(positionEstimated.x),df.format(positionEstimated.y)));
+                textViewListenerPositionGPS.setText(getContext().getString(
+                        R.string.listener_gps,signalLevel, positionGPS.getLatitude(),positionGPS.getLongitude()));
+                textViewListenerHeading.setText(getContext().getString(
+                        R.string.listener_pose_real,heading_real,df.format(ultrasonic_height_real)));
+                textViewListenerVStick.setText(getContext().getString(
+                        R.string.listener_vstick,df.format(vstickPitch),df.format(vstickRoll),df.format(vstickYaw),df.format(vstickThrottle)));
                 if (localMission != null) {
                     String stateText = localMission.missionState + "\n" + localMission.getCurrentEvent().eventState;
                     textViewListenerMissionState.setText(getContext().getString(R.string.listener_mission_state,stateText));

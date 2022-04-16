@@ -75,21 +75,20 @@
             />
 
         <TextView
-            android:id="@+id/text_heading"
+            android:id="@+id/text_pose_real"
             android:layout_width="wrap_content"
             android:layout_height="50dp"
             android:layout_below="@+id/video_feed_frame"
             android:layout_alignLeft="@+id/video_feed_frame"
-            android:layout_toLeftOf="@+id/lm_list_scroll"
             android:layout_marginTop="10dp"
-            android:text="@string/listener_heading"
-            />
+            android:layout_toLeftOf="@+id/lm_list_scroll"
+            android:text="@string/listener_pose_real" />
 
         <TextView
             android:id="@+id/text_velocity"
             android:layout_width="wrap_content"
             android:layout_height="50dp"
-            android:layout_below="@+id/text_heading"
+            android:layout_below="@+id/text_pose_real"
             android:layout_alignLeft="@+id/video_feed_frame"
             android:layout_marginTop="10dp"
             android:layout_toLeftOf="@+id/lm_list_scroll"
