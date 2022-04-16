@@ -348,6 +348,7 @@ public class LocalMissionView extends RelativeLayout
                 eventGOTO(lmEvent.data0,lmEvent.data1);
                 break;
             case AIM_AT:
+                eventAIM_AT(lmEvent.data0);
                 break;
             case GIMBAL:
                 eventGIMBAL(lmEvent.data0);
@@ -380,6 +381,21 @@ public class LocalMissionView extends RelativeLayout
             vstickPitch = vec.y;
             vstickRoll = vec.x;
         }
+    }
+
+
+    private void eventAIM_AT(float angle) {
+        // First tick
+        if (localMission.getCurrentEvent().eventState == LocalMissionEventState.START) {
+            localMission.getCurrentEvent().eventState = LocalMissionEventState.RUNNING;
+            vstickYaw = angle;
+        }
+
+        // Exit tick
+        if (Math.abs(heading_real - vstickYaw) < 1) {
+            localMission.getCurrentEvent().eventState = LocalMissionEventState.FINISHED;
+        }
+        // Otherwise wait while rotating
     }
 
 
