@@ -665,13 +665,14 @@ public class LocalMissionView extends RelativeLayout
         @Override
         public void run() {
             if (ModuleVerificationUtil.isFlightControllerAvailable()) {
-                rotationLocalToGlobal.transform(vstickPitchRollLocal,vstickPitchRollGlobal);
+                rotationGlobalToLocal.transform(vstickPitchRollLocal,vstickPitchRollGlobal);
                 vstickYawGlobal = vstickYawLocal + calibratedYaw;
                 vstickYawGlobal = ensureYawRange(vstickYawGlobal);
                 DJISampleApplication.getAircraftInstance()
                         .getFlightController()
-                        .sendVirtualStickFlightControlData(new FlightControlData(vstickPitchRollGlobal.x,
-                                        vstickPitchRollLocal.y,
+                        .sendVirtualStickFlightControlData(new FlightControlData(
+                                        vstickPitchRollGlobal.x,
+                                        vstickPitchRollGlobal.y,
                                         vstickYawGlobal,
                                         vstickThrottle),
                                 new CommonCallbacks.CompletionCallback() {
