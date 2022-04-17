@@ -65,6 +65,7 @@ public class LocalMissionView extends RelativeLayout
     private LocalMission localMission;
 
     private float calibratedYaw = 0;
+    private float calibratedBarometerAltitude = 0;
     private Matrix3f rotationLocalToGlobal;
     private Matrix3f rotationGlobalToLocal;
 
@@ -82,6 +83,8 @@ public class LocalMissionView extends RelativeLayout
 
     private float gimbalPitchReal = 0;
     private float ultrasonicHeightReal = 0;
+    private float barometerAltitudeReal = 0;
+    private float barometerAltitudeRaw = 0;
 
     // Control data sent via the Virtual Stick interface - Local updates global at send time
     private Vector3f vstickPitchRollLocal;
@@ -329,6 +332,9 @@ public class LocalMissionView extends RelativeLayout
         GPSSignalLevel signalLevel = djiFlightControllerCurrentState.getGPSSignalLevel();
         ultrasonicHeightReal = djiFlightControllerCurrentState.getUltrasonicHeightInMeters();
 
+        barometerAltitudeRaw = positionGPS.getAltitude();
+        barometerAltitudeReal = barometerAltitudeRaw - calibratedBarometerAltitude;
+
         // Update UI Elements
         runOnUiThread(new Runnable() {
             @Override
@@ -342,11 +348,19 @@ public class LocalMissionView extends RelativeLayout
                 textViewListenerPositionEstimated.setText(getContext().getString(
                         R.string.listener_position,df.format(positionEstimatedLocal.x),df.format(positionEstimatedLocal.y)));
                 textViewListenerPositionGPS.setText(getContext().getString(
-                        R.string.listener_gps,signalLevel, positionGPS.getLatitude(),positionGPS.getLongitude(),positionGPS.getAltitude()));
+                        R.string.listener_gps,
+                        signalLevel,
+                        positionGPS.getLatitude(),
+                        positionGPS.getLongitude(),
+                        positionGPS.getAltitude()));
                 textViewListenerHeading.setText(getContext().getString(
                         R.string.listener_pose_real, yawLocal,df.format(ultrasonicHeightReal)));
                 textViewListenerVStick.setText(getContext().getString(
-                        R.string.listener_vstick,df.format(vstickPitchRollLocal.x),df.format(vstickPitchRollLocal.y),df.format(vstickYawLocal),df.format(vstickThrottle)));
+                        R.string.listener_vstick,
+                        df.format(vstickPitchRollLocal.x),
+                        df.format(vstickPitchRollLocal.y),
+                        df.format(vstickYawLocal),
+                        df.format(vstickThrottle)));
                 if (localMission != null) {
                     String stateText = localMission.missionState + "\n" + localMission.getCurrentEvent().eventState;
                     textViewListenerMissionState.setText(getContext().getString(R.string.listener_mission_state,stateText));
@@ -504,7 +518,7 @@ public class LocalMissionView extends RelativeLayout
         }
 
         // Exit tick
-        if (Math.abs((ultrasonicHeightReal - 0.2) - vstickThrottle) < 0.5) {
+        if (Math.abs(barometerAltitudeReal - vstickThrottle) < 0.2) {
             localMission.getCurrentEvent().eventState = LocalMissionEventState.FINISHED;
         }
         // Otherwise wait while changing altitude
@@ -632,6 +646,8 @@ public class LocalMissionView extends RelativeLayout
                 (float)Math.cos(-aR), (float)-Math.sin(-aR),0,
                 (float)Math.sin(-aR), (float)Math.cos(-aR),0,
                 0,0,1);
+
+        calibratedBarometerAltitude = barometerAltitudeRaw;
     }
 
 
