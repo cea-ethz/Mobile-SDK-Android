@@ -146,7 +146,7 @@
     set_get_ocusync_airlink_channel_description
 
     <!-- Local Mission View -->
-    <string name="listener_pose_real"><b>Heading:</b> %1$f\n<b>US-Height:</b> %2$s</string>
+    <string name="listener_pose_real"><b>Heading:</b> %1$f\n<b>BR-Height:</b> %2$s</string>
     <string name="listener_velocity"><b>Velocity:</b> \n X: %1$s Y: %2$s Z: %3$s </string>
     <string name="listener_position"><b>Estimated Position:</b>\n X: %1$s Y: %2$s</string>
     <string name="listener_vstick"><b>VStick:</b>\n P: %1$s R: %2$s Y: %3$s \nT: %4$s</string>

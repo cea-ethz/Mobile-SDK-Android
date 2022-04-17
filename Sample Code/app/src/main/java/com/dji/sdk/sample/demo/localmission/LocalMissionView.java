@@ -64,8 +64,11 @@ public class LocalMissionView extends RelativeLayout
     // Current mission being executed
     private LocalMission localMission;
 
+    // Initial pose data set during Calibrate button press
     private float calibratedYaw = 0;
     private float calibratedBarometerAltitude = 0;
+
+
     private Matrix3f rotationLocalToGlobal;
     private Matrix3f rotationGlobalToLocal;
 
@@ -78,8 +81,8 @@ public class LocalMissionView extends RelativeLayout
     private boolean cameraReady = true;
 
     // Pose values from direct internal measurement - global updates local in compass callback
-    private float yawGlobal;
-    private float yawLocal;
+    private float yawGlobal = 0;
+    private float yawLocal = 0;
 
     private float gimbalPitchReal = 0;
     private float ultrasonicHeightReal = 0;
@@ -304,12 +307,7 @@ public class LocalMissionView extends RelativeLayout
         if (null != compass) {
             yawGlobal = compass.getHeading();
             yawLocal = yawGlobal - calibratedYaw;
-            if (yawLocal < 180) {
-                yawLocal += 360;
-            }
-            if (yawLocal > 180) {
-                yawLocal -= 360;
-            }
+            yawLocal = ensureYawRange(yawLocal);
         }
 
         // Read from FC State about Velocity, Estimated Position (Basic), Position (GPS)
@@ -353,7 +351,7 @@ public class LocalMissionView extends RelativeLayout
                         positionGPS.getLongitude(),
                         positionGPS.getAltitude()));
                 textViewListenerHeading.setText(getContext().getString(
-                        R.string.listener_pose_real, yawLocal,df.format(ultrasonicHeightReal)));
+                        R.string.listener_pose_real, yawLocal,df.format(barometerAltitudeReal)));
                 textViewListenerVStick.setText(getContext().getString(
                         R.string.listener_vstick,
                         df.format(vstickPitchRollLocal.x),
@@ -441,7 +439,7 @@ public class LocalMissionView extends RelativeLayout
         }
 
         // Exit tick
-        if (Math.abs(yawGlobal - vstickYawLocal) < 1) {
+        if (Math.abs(yawLocal - vstickYawLocal) < 1) {
             localMission.getCurrentEvent().eventState = LocalMissionEventState.FINISHED;
         }
         // Otherwise wait while aircraft rotates
@@ -593,8 +591,8 @@ public class LocalMissionView extends RelativeLayout
 
     private void loadMission() {
         //TODO: Make this not hardcoded
-        String urlString = "http://192.168.0.164:8000/mission.json"; // Wifi
-        //String urlString = "http://192.168.80.121:8000/mission.json"; // Hotspot
+        //String urlString = "http://192.168.0.164:8000/mission.json"; // Wifi
+        String urlString = "http://192.168.80.121:8000/mission.json"; // Hotspot
 
         try {
             HttpURLConnection urlConnection = null;
@@ -669,11 +667,12 @@ public class LocalMissionView extends RelativeLayout
             if (ModuleVerificationUtil.isFlightControllerAvailable()) {
                 rotationLocalToGlobal.transform(vstickPitchRollLocal,vstickPitchRollGlobal);
                 vstickYawGlobal = vstickYawLocal + calibratedYaw;
+                vstickYawGlobal = ensureYawRange(vstickYawGlobal);
                 DJISampleApplication.getAircraftInstance()
                         .getFlightController()
                         .sendVirtualStickFlightControlData(new FlightControlData(vstickPitchRollGlobal.x,
                                         vstickPitchRollLocal.y,
-                                        vstickYawLocal,
+                                        vstickYawGlobal,
                                         vstickThrottle),
                                 new CommonCallbacks.CompletionCallback() {
                                     @Override
@@ -720,5 +719,21 @@ public class LocalMissionView extends RelativeLayout
     private boolean isCameraAvailable() {
         return (null != DJISampleApplication.getProductInstance()) &&
                 (null != DJISampleApplication.getProductInstance().getCamera());
+    }
+
+
+    /**
+     * Normalizes a yaw heading as necessary to fall within the -180:180 DJI accepted range
+     * @param input
+     * @return
+     */
+    private float ensureYawRange(float input) {
+        if (input < -180) {
+            input += 360;
+        }
+        if (input > 180) {
+            input -= 360;
+        }
+        return(input);
     }
 }
