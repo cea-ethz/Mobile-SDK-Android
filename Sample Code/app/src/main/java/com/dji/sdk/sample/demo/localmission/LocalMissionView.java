@@ -69,8 +69,8 @@ public class LocalMissionView extends RelativeLayout
     private float calibratedBarometerAltitude = 0;
 
 
-    private Matrix3f rotationLocalToGlobal;
-    private Matrix3f rotationGlobalToLocal;
+    private Matrix3f transformLocalToGlobal;
+    private Matrix3f transformGlobalToLocal;
 
     // Hardware objects
     private Camera camera;
@@ -316,13 +316,13 @@ public class LocalMissionView extends RelativeLayout
         float vz = djiFlightControllerCurrentState.getVelocityZ();
 
         currentVelocityGlobal.set(vx,vy,vz);
-        rotationGlobalToLocal.transform(currentVelocityGlobal,currentVelocityLocal);
+        transformGlobalToLocal.transform(currentVelocityGlobal,currentVelocityLocal);
 
         Vector3f scaledVelocity = new Vector3f(currentVelocityGlobal);
         scaledVelocity.scale(controllerUpdateTime);
 
         positionEstimatedGlobal.add(scaledVelocity);
-        rotationGlobalToLocal.transform(positionEstimatedGlobal,positionEstimatedLocal);
+        transformGlobalToLocal.transform(positionEstimatedGlobal,positionEstimatedLocal);
 
 
         LocationCoordinate3D positionGPS = djiFlightControllerCurrentState.getAircraftLocation();
@@ -634,12 +634,12 @@ public class LocalMissionView extends RelativeLayout
     public void calibrate(float calibrationAngle) {
         calibratedYaw = calibrationAngle;
         float aR = (float)Math.toRadians(calibratedYaw);
-        rotationLocalToGlobal = new Matrix3f(
+        transformLocalToGlobal = new Matrix3f(
                 (float)Math.cos(aR), (float)-Math.sin(aR),0,
                 (float)Math.sin(aR), (float)Math.cos(aR),0,
                 0,0,1);
 
-        rotationGlobalToLocal = new Matrix3f(
+        transformGlobalToLocal = new Matrix3f(
                 (float)Math.cos(-aR), (float)-Math.sin(-aR),0,
                 (float)Math.sin(-aR), (float)Math.cos(-aR),0,
                 0,0,1);
@@ -665,7 +665,7 @@ public class LocalMissionView extends RelativeLayout
         @Override
         public void run() {
             if (ModuleVerificationUtil.isFlightControllerAvailable()) {
-                rotationGlobalToLocal.transform(vstickPitchRollLocal,vstickPitchRollGlobal);
+                transformGlobalToLocal.transform(vstickPitchRollLocal,vstickPitchRollGlobal);
                 vstickYawGlobal = vstickYawLocal + calibratedYaw;
                 vstickYawGlobal = ensureYawRange(vstickYawGlobal);
                 DJISampleApplication.getAircraftInstance()
