@@ -180,27 +180,7 @@ public class LocalMissionView extends RelativeLayout
         super.onAttachedToWindow();
         setUpListeners();
 
-        if (ModuleVerificationUtil.isCameraModuleAvailable()) {
-            camera = DJISampleApplication.getAircraftInstance().getCamera();
-            if (ModuleVerificationUtil.isMatrice300RTK() || ModuleVerificationUtil.isMavicAir2()) {
-                camera.setFlatMode(SettingsDefinitions.FlatCameraMode.PHOTO_SINGLE, djiError -> ToastUtils.setResultToToast("setFlatMode to PHOTO_SINGLE"));
-            } else {
-                camera.setMode(SettingsDefinitions.CameraMode.SHOOT_PHOTO, djiError -> ToastUtils.setResultToToast("setMode to shoot_PHOTO"));
-            }
-//            camera.setMediaFileCallback(new MediaFile.Callback() {
-//                @Override
-//                public void onNewFile(@NonNull MediaFile mediaFile) {
-//                    ToastUtils.setResultToToast("New photo generated");
-//                }
-//            });
-            camera.setNewGeneratedMediaFileInfoCallback(new MediaFile.NewFileInfoCallback() {
-                @Override
-                public void onNewFileInfo(@NonNull MediaFileInfo mediaFileInfo) {
-                    ToastUtils.setResultToToast("New photo generated");
-                    cameraReady = true;
-                }
-            });
-        }
+
     }
 
 
@@ -223,6 +203,25 @@ public class LocalMissionView extends RelativeLayout
 
     private void setUpListeners() {
         // Receive : Camera
+
+        if (ModuleVerificationUtil.isCameraModuleAvailable()) {
+            camera = DJISampleApplication.getAircraftInstance().getCamera();
+            if (ModuleVerificationUtil.isMatrice300RTK() || ModuleVerificationUtil.isMavicAir2()) {
+                camera.setFlatMode(SettingsDefinitions.FlatCameraMode.PHOTO_SINGLE, djiError -> ToastUtils.setResultToToast("setFlatMode to PHOTO_SINGLE"));
+            } else {
+                camera.setMode(SettingsDefinitions.CameraMode.SHOOT_PHOTO, djiError -> ToastUtils.setResultToToast("setMode to shoot_PHOTO"));
+            }
+
+            camera.setNewGeneratedMediaFileInfoCallback(new MediaFile.NewFileInfoCallback() {
+                @Override
+                public void onNewFileInfo(@NonNull MediaFileInfo mediaFileInfo) {
+                    ToastUtils.setResultToToast("New photo generated");
+                    cameraReady = true;
+                }
+            });
+        }
+
+
         sourceListener = new VideoFeeder.PhysicalSourceListener() {
             @Override
             public void onChange(VideoFeeder.VideoFeed videoFeed, PhysicalSource newPhysicalSource) {
@@ -230,7 +229,7 @@ public class LocalMissionView extends RelativeLayout
         };
         setVideoFeederListeners(true);
 
-        Camera camera = DJISampleApplication.getProductInstance().getCamera();
+        //Camera camera = DJISampleApplication.getProductInstance().getCamera();
         camera.setSystemStateCallback(new SystemState.Callback() {
             @Override
             public void onUpdate(@NonNull SystemState systemState) {
@@ -483,7 +482,7 @@ public class LocalMissionView extends RelativeLayout
 
     private void eventPHOTO() {
         if (isCameraAvailable() && cameraReady && localMission.getCurrentEvent().eventState == LocalMissionEventState.START) {
-            Camera camera = DJISampleApplication.getProductInstance().getCamera();
+            //Camera camera = DJISampleApplication.getProductInstance().getCamera();
             camera.startShootPhoto(new CommonCallbacks.CompletionCallback() {
                 @Override
                 public void onResult(DJIError djiError) {
