@@ -436,15 +436,15 @@ public class LocalMissionView extends RelativeLayout
     private void eventAIM_AT(float angle) {
         // First tick
         if (localMission.getCurrentEvent().eventState == LocalMissionEventState.START) {
-            localMission.getCurrentEvent().eventState = LocalMissionEventState.RUNNING;
             vstickYawLocal = angle;
+            localMission.getCurrentEvent().eventState = LocalMissionEventState.RUNNING;
         }
 
         // Exit tick
         if (Math.abs(yawGlobal - vstickYawLocal) < 1) {
             localMission.getCurrentEvent().eventState = LocalMissionEventState.FINISHED;
         }
-        // Otherwise wait while rotating
+        // Otherwise wait while aircraft rotates
     }
 
 
@@ -454,12 +454,8 @@ public class LocalMissionView extends RelativeLayout
             return;
         }
 
-        // Rotation Finished, continue
-        if (Math.abs(gimbalPitchReal - angle) < 1) {
-            localMission.getCurrentEvent().eventState = LocalMissionEventState.FINISHED;
-        }
-        // Else Begin Rotation
-        else if (localMission.getCurrentEvent().eventState == LocalMissionEventState.START) {
+        // First Tick
+        if (localMission.getCurrentEvent().eventState == LocalMissionEventState.START) {
             System.out.println("Rotate to " + angle);
             if (angle > 30 || angle < -90) {
                 System.out.println("Bad angle to gimbal");
@@ -476,7 +472,11 @@ public class LocalMissionView extends RelativeLayout
 
             localMission.getCurrentEvent().eventState = LocalMissionEventState.RUNNING;
         }
-        // Else wait while rotation occurs
+        // Exit Tick
+        else if (Math.abs(gimbalPitchReal - angle) < 1) {
+            localMission.getCurrentEvent().eventState = LocalMissionEventState.FINISHED;
+        }
+        // Else wait while gimbal rotates
     }
 
 
@@ -503,8 +503,8 @@ public class LocalMissionView extends RelativeLayout
 
                 }
             });
-            localMission.getCurrentEvent().eventState = LocalMissionEventState.RUNNING;
             cameraReady = false;
+            localMission.getCurrentEvent().eventState = LocalMissionEventState.RUNNING;
         }
     }
 
@@ -512,15 +512,15 @@ public class LocalMissionView extends RelativeLayout
     private void eventALTITUDE(float altitude) {
         // First tick
         if (localMission.getCurrentEvent().eventState == LocalMissionEventState.START) {
-            localMission.getCurrentEvent().eventState = LocalMissionEventState.RUNNING;
             vstickThrottle = altitude;
+            localMission.getCurrentEvent().eventState = LocalMissionEventState.RUNNING;
         }
 
         // Exit tick
         if (Math.abs(barometerAltitudeReal - vstickThrottle) < 0.2) {
             localMission.getCurrentEvent().eventState = LocalMissionEventState.FINISHED;
         }
-        // Otherwise wait while changing altitude
+        // Otherwise wait while aircraft changes altitude
     }
 
 
