@@ -1,0 +1,21 @@
+{
+	"mission_name": "yaw_heading_test",
+	"events": [
+		{
+			"type": "AIM_AT",
+			"data0": 0
+		},
+		{
+			"type": "AIM_AT",
+			"data0": 90
+		},
+		{
+			"type": "AIM_AT",
+			"data0": -90
+		},
+		{
+			"type": "AIM_AT",
+			"data0": 179
+		}
+	]
+}

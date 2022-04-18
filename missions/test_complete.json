@@ -1,0 +1,70 @@
+{
+	"mission_name": "test_complete",
+	"events": [
+		{
+			"type": "ALTITUDE",
+			"data0": 3
+		},
+		{
+			"type": "GIMBAL",
+			"data0": -45
+		},
+		{
+			"type": "GO_TO",
+			"data0": -4,
+			"data1": -4
+		},
+		{
+			"type": "AIM_AT",
+			"data0": 45
+		},
+		{
+			"type": "PHOTO"
+		},
+		{
+			"type": "GO_TO",
+			"data0": 4,
+			"data1": -4
+		},
+		{
+			"type": "AIM_AT",
+			"data0": 135
+		},
+		{
+			"type": "PHOTO"
+		},
+		{
+			"type": "GO_TO",
+			"data0": 4,
+			"data1": 4
+		},
+		{
+			"type": "AIM_AT",
+			"data0": -135
+		},
+		{
+			"type": "PHOTO"
+		},
+		{
+			"type": "GO_TO",
+			"data0": -4,
+			"data1": 4
+		},
+		{
+			"type": "AIM_AT",
+			"data0": -45
+		},
+		{
+			"type": "PHOTO"
+		},
+		{
+			"type": "GO_TO",
+			"data0": 0,
+			"data1": 0
+		},
+		{
+			"type": "ALTITUDE",
+			"data0": 1
+		}
+	]
+}

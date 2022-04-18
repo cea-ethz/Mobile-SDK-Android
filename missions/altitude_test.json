@@ -1,0 +1,21 @@
+{
+	"mission_name": "altitude_test",
+	"events": [
+		{
+			"type": "ALTITUDE",
+			"data0": 3
+		},
+		{
+			"type": "ALTITUDE",
+			"data0": 2
+		},
+		{
+			"type": "ALTITUDE",
+			"data0": 4
+		},
+		{
+			"type": "ALTITUDE",
+			"data0": 1
+		}
+	]
+}

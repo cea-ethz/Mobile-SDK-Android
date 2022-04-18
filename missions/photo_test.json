@@ -1,0 +1,26 @@
+{
+	"mission_name": "photo test",
+	"events": [
+		{
+			"type": "GIMBAL",
+			"data0": 0
+		},
+		{
+			"type": "PHOTO"
+		},
+		{
+			"type": "GIMBAL",
+			"data0": -45
+		},
+		{
+			"type": "PHOTO"
+		},
+		{
+			"type": "GIMBAL",
+			"data0": -90
+		},
+		{
+			"type": "PHOTO"
+		}
+	]
+}

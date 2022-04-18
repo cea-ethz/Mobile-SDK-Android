@@ -1,0 +1,25 @@
+{
+	"mission_name": "square movement test",
+	"events": [
+		{
+			"type": "GO_TO",
+			"data0": 3,
+			"data1": 0
+		},
+		{
+			"type": "GO_TO",
+			"data0": 3,
+			"data1": 3
+		},
+		{
+			"type": "GO_TO",
+			"data0": 0,
+			"data1": 3
+		},
+		{
+			"type": "GO_TO",
+			"data0": 0,
+			"data1": 0
+		}
+	]
+}
