@@ -46,6 +46,7 @@ import com.dji.sdk.sample.demo.gimbal.PushGimbalDataView;
 import com.dji.sdk.sample.demo.key.KeyedInterfaceView;
 import com.dji.sdk.sample.demo.keymanager.KeyManagerView;
 import com.dji.sdk.sample.demo.lidar.LidarView;
+import com.dji.sdk.sample.demo.localmission.ArucoCalibrationView;
 import com.dji.sdk.sample.demo.lookat.LookAtMissionView;
 import com.dji.sdk.sample.demo.missionoperator.FollowMeMissionOperatorView;
 import com.dji.sdk.sample.demo.missionoperator.WaypointMissionOperatorView;
@@ -97,6 +98,8 @@ public class DemoListView extends FrameLayout {
                 false,
                 new GroupItem(R.string.flight_controller_listview_local_mission,
                         LocalMissionView.class),
+                new GroupItem(R.string.aruco_calibration_view_name,
+                        ArucoCalibrationView.class),
                 new GroupItem(R.string.flight_controller_listview_compass_calibration,
                         CompassCalibrationView.class),
                 new GroupItem(R.string.flight_controller_listview_orientation_mode, OrientationModeView.class),

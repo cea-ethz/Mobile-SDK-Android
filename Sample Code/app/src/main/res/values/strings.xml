@@ -154,6 +154,12 @@
     <string name="listener_mission_state"><b>Mission State:</b> %1$s</string>
     <string name="listener_mission_error"><b>Mission Error:</b> %1$s</string>
 
+    <!-- Aruco Calibration View -->
+    <string name="btn_aruco_capture_name">Capture</string>
+    <string name="btn_aruco_calibrate_name">Calibrate</string>
+    <string name="aruco_feedback">Captured: %1$i</string>
+    <string name="aruco_calibration_view_name">Aruco Calibration</string>
+
 
 
     <!--*************** Camera string set ***************-->

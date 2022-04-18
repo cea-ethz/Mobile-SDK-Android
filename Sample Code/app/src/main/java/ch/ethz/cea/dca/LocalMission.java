@@ -76,7 +76,7 @@ public class LocalMission {
             else {
                 out += "  ";
             }
-            out += String.format("%03d",i) + " " + event.eventType;
+            out += String.format("%03d",i) + " " + event.eventType + " : " + event.data0 + "," + event.data1;
             out += "\n";
         }
         return(out);

@@ -223,7 +223,7 @@ public class VirtualStickView extends RelativeLayout
                 float yawJoyControlMaxSpeed = 20;
 
                 yaw = yawJoyControlMaxSpeed * pX;
-                throttle = verticalJoyControlMaxSpeed * pY;
+                throttle = verticalJoyControlMaxSpeed * pY + 1;
 
                 System.out.println(throttle);
 

@@ -272,7 +272,7 @@ public class LocalMissionView extends RelativeLayout
         // Only create VStick timer after its enabled
         sendVirtualStickDataTask = new LocalMissionView.SendVirtualStickDataTask();
         sendVirtualStickDataTimer = new Timer();
-        sendVirtualStickDataTimer.schedule(sendVirtualStickDataTask, 100, 100);
+        sendVirtualStickDataTimer.schedule(sendVirtualStickDataTask, 100, 40);
     }
 
 
@@ -389,18 +389,18 @@ public class LocalMissionView extends RelativeLayout
         System.out.println(lmEvent.eventState);
         switch(lmEvent.eventType) {
             case GO_TO:
-                eventGOTO(lmEvent.data0,lmEvent.data1);
+                eventGOTO(lmEvent);
                 break;
             case AIM_AT:
-                eventAIM_AT(lmEvent.data0);
+                eventAIM_AT(lmEvent);
                 break;
             case GIMBAL:
-                eventGIMBAL(lmEvent.data0);
+                eventGIMBAL(lmEvent);
                 break;
             case PHOTO:
-                eventPHOTO();
+                eventPHOTO(lmEvent);
             case ALTITUDE:
-                eventALTITUDE(lmEvent.data0);
+                eventALTITUDE(lmEvent);
                 break;
             case ALIGN:
                 break;
@@ -411,7 +411,9 @@ public class LocalMissionView extends RelativeLayout
     }
 
 
-    private void eventGOTO(float x, float y) {
+    private void eventGOTO(LocalMissionEvent event) {
+        float x = event.data0;
+        float y = event.data1;
         Vector3f vec = new Vector3f(x,y,0);
         vec.sub(positionEstimatedLocal);
         vec.z = 0;
@@ -419,41 +421,44 @@ public class LocalMissionView extends RelativeLayout
         if (d < 0.5) {
             vstickPitchRollLocal.x = 0;
             vstickPitchRollLocal.y = 0;
-            localMission.getCurrentEvent().eventState = LocalMissionEventState.FINISHED;
+            event.eventState = LocalMissionEventState.FINISHED;
         }
         else {
             vec.normalize();
             vec.scale(1f);
-            vstickPitchRollLocal.y = vec.x;
-            vstickPitchRollLocal.x = vec.y;
-            localMission.getCurrentEvent().eventState = LocalMissionEventState.RUNNING;
+            // These are backwards
+            vstickPitchRollLocal.x = vec.x;
+            vstickPitchRollLocal.y = vec.y;
+            event.eventState = LocalMissionEventState.RUNNING;
         }
     }
 
 
-    private void eventAIM_AT(float angle) {
+    private void eventAIM_AT(LocalMissionEvent event) {
+        float angle = event.data0;
         // First tick
-        if (localMission.getCurrentEvent().eventState == LocalMissionEventState.START) {
+        if (event.eventState == LocalMissionEventState.START) {
             vstickYawLocal = angle;
-            localMission.getCurrentEvent().eventState = LocalMissionEventState.RUNNING;
+            event.eventState = LocalMissionEventState.RUNNING;
         }
 
         // Exit tick
         if (Math.abs(yawLocal - vstickYawLocal) < 1) {
-            localMission.getCurrentEvent().eventState = LocalMissionEventState.FINISHED;
+            event.eventState = LocalMissionEventState.FINISHED;
         }
         // Otherwise wait while aircraft rotates
     }
 
 
-    private void eventGIMBAL(float angle) {
+    private void eventGIMBAL(LocalMissionEvent event) {
+        float angle = event.data0;
         Gimbal gimbal = getGimbalInstance();
         if (gimbal == null) {
             return;
         }
 
         // First Tick
-        if (localMission.getCurrentEvent().eventState == LocalMissionEventState.START) {
+        if (event.eventState == LocalMissionEventState.START) {
             System.out.println("Rotate to " + angle);
             if (angle > 30 || angle < -90) {
                 System.out.println("Bad angle to gimbal");
@@ -468,17 +473,17 @@ public class LocalMissionView extends RelativeLayout
                 }
             });
 
-            localMission.getCurrentEvent().eventState = LocalMissionEventState.RUNNING;
+            event.eventState = LocalMissionEventState.RUNNING;
         }
         // Exit Tick
         else if (Math.abs(gimbalPitchReal - angle) < 1) {
-            localMission.getCurrentEvent().eventState = LocalMissionEventState.FINISHED;
+            event.eventState = LocalMissionEventState.FINISHED;
         }
         // Else wait while gimbal rotates
     }
 
 
-    private void eventPHOTO() {
+    private void eventPHOTO(LocalMissionEvent event) {
         if (isCameraAvailable() && cameraReady && localMission.getCurrentEvent().eventState == LocalMissionEventState.START) {
             //Camera camera = DJISampleApplication.getProductInstance().getCamera();
             camera.startShootPhoto(new CommonCallbacks.CompletionCallback() {
@@ -495,7 +500,7 @@ public class LocalMissionView extends RelativeLayout
                     handler.postDelayed(new Runnable() {
                         @Override
                         public void run() {
-                            localMission.getCurrentEvent().eventState = LocalMissionEventState.FINISHED;
+                            event.eventState = LocalMissionEventState.FINISHED;
                         }
                     }, 1500);
 
@@ -507,16 +512,17 @@ public class LocalMissionView extends RelativeLayout
     }
 
 
-    private void eventALTITUDE(float altitude) {
+    private void eventALTITUDE(LocalMissionEvent event) {
+        float altitude = event.data0;
         // First tick
-        if (localMission.getCurrentEvent().eventState == LocalMissionEventState.START) {
+        if (event.eventState == LocalMissionEventState.START) {
             vstickThrottle = altitude;
-            localMission.getCurrentEvent().eventState = LocalMissionEventState.RUNNING;
+            event.eventState = LocalMissionEventState.RUNNING;
         }
 
         // Exit tick
         if (Math.abs(barometerAltitudeReal - vstickThrottle) < 0.2) {
-            localMission.getCurrentEvent().eventState = LocalMissionEventState.FINISHED;
+            event.eventState = LocalMissionEventState.FINISHED;
         }
         // Otherwise wait while aircraft changes altitude
     }
@@ -631,6 +637,13 @@ public class LocalMissionView extends RelativeLayout
         }
     }
 
+
+    /**
+     * Sets the calibration pose data. Stores the calibrated yaw for compass offset
+     * Generates the transform matrices for moving coordinates between global/local spaces
+     * Stores the barometric altitude at the ground.
+     * @param calibrationAngle
+     */
     public void calibrate(float calibrationAngle) {
         calibratedYaw = calibrationAngle;
         float aR = (float)Math.toRadians(calibratedYaw);
@@ -665,14 +678,14 @@ public class LocalMissionView extends RelativeLayout
         @Override
         public void run() {
             if (ModuleVerificationUtil.isFlightControllerAvailable()) {
-                transformGlobalToLocal.transform(vstickPitchRollLocal,vstickPitchRollGlobal);
+                transformLocalToGlobal.transform(vstickPitchRollLocal,vstickPitchRollGlobal);
                 vstickYawGlobal = vstickYawLocal + calibratedYaw;
                 vstickYawGlobal = ensureYawRange(vstickYawGlobal);
                 DJISampleApplication.getAircraftInstance()
                         .getFlightController()
                         .sendVirtualStickFlightControlData(new FlightControlData(
-                                        vstickPitchRollGlobal.x,
                                         vstickPitchRollGlobal.y,
+                                        vstickPitchRollGlobal.x,
                                         vstickYawGlobal,
                                         vstickThrottle),
                                 new CommonCallbacks.CompletionCallback() {

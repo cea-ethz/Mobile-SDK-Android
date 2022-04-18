@@ -87,6 +87,7 @@ dependencies {
         exclude module: 'library-anti-distortion'
         //exclude module: 'fly-safe-database'
     })
+    implementation project(path: ':opencv344-contrib')
     compileOnly 'com.dji:dji-sdk-provided:4.16.1'
 
     implementation 'androidx.appcompat:appcompat:1.0.0'
