@@ -1,6 +1,62 @@
 # CEA DJI Controller
 
-## SDK Key
+## Using the Local Mission Module
+
+The Local Mission modules performs flights in non-gps environments. 
+
+Missions should be exported from a planning software in as a JSON file, using the format outlined below. 
+
+The Android app loads missions over HTTP, within a local network or hotspot created by the mobile device. This has been tested with the [LocalHTTPMission](https://github.com/cea-ethz/LocalHTTPMission) tool. The tool serves the last JSON file dropped onto its window, on the listed IP address. 
+
+### Interface
+
+
+
+### Local Mission JSON Format
+A mission file consists of a mission name and an array of event objects. Each event object consists of a type, and one or two data arguments specifying the event. For a full example of all currently implemented event types, see [test_complete.json](missions/test_complete.json).
+
+~~~json
+{
+	"mission_name": "test_mission",
+	"events": [
+		{
+			"type": "EVENT_TYPE",
+			"data0": 0
+			"data1": 0
+		}
+	]
+}
+~~~
+
+#### Event Types
+
+##### GO_TO
+
+Flies the aircraft in a straight line to the local coordinates (meters) described in data0 and data1. Does not change the yaw heading. Standard speed is at 1m/s. 
+
+##### ALTITUDE
+
+Sets the current altitude of the aircraft (meters). Note this is currently measured using the internal barometer, relative to the altitude measured during calibration. . 
+
+##### AIM_AT
+
+Sets the yaw heading of the aircraft in degrees, relative to the heading set during calibration. Valid values are from -180 to 180, values increasing clockwise. 
+
+##### GIMBAL
+
+Sets the pitch angle of the camera gimbal in degrees, relative to 0° pointing forward. Valid values range from -90° (down) to 30°(slightly up). 
+
+![Gimbal Range](docs/images/gimbal.jpg)
+
+##### PHOTO
+
+Captures a photo at the current aircraft and gimbal heading
+
+
+
+## Development
+
+### SDK Key
 To connect to SDK, create file res/values/api-keys.xml containing:
 ```xml
 <resources>
@@ -8,7 +64,7 @@ To connect to SDK, create file res/values/api-keys.xml containing:
 </resources>
 ```
 
-# DJI Mobile SDK for Android Latest Version 4.16.1
+# DJI Mobile SDK for Android Latest Version 4.16.1 (Original SDK Readme)
 
 ## What Is This?
 
