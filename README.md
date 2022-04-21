@@ -108,7 +108,7 @@ To connect to SDK, create file res/values/api-keys.xml containing:
 
 Be aware that the Virtual Stick arguments don't intuitively match with the North-East-Down system used elsewhere by the aircraft (such as in the velocity sensor callback). See the diagram below regarding these two systems relative the the pose of the pictured aircraft.   
 
-![Axes](doc/images/axes.png)
+![Axes](docs/images/axes.png)
 
 # DJI Mobile SDK for Android Latest Version 4.16.1 (Original SDK Readme)
 
