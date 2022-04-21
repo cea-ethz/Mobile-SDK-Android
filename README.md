@@ -2,18 +2,46 @@
 
 ## Using the Local Mission Module
 
-The Local Mission modules performs flights in non-gps environments. 
+The Local Mission modules performs flights in non-gps environments. It uses the Virtual Stick system to send direct movement controls to the aircraft. 
 
 Missions should be exported from a planning software in as a JSON file, using the format outlined below. 
 
 The Android app loads missions over HTTP, within a local network or hotspot created by the mobile device. This has been tested with the [LocalHTTPMission](https://github.com/cea-ethz/LocalHTTPMission) tool. The tool serves the last JSON file dropped onto its window, on the listed IP address. 
 
+## Playing a standard mission
+- Set the aircraft on the landing platform facing the local '0' angle. 
+- Press 'Calibrate' to store this angle and altitude
+- Press 'Mission Load' to read a mission from the laptop
+- Press 'Enable Virtual Stick'
+- Press 'Take Off'
+- Press 'Mission Start'
+
+To immediately stop the aircraft while playing a mission, move the mode switch on the left side of the physical controller out of the P position - this will cause the aircraft to hover. 
+
 ### Interface
+[Interface](docs/images/interface_annotated.png)
+1. Camera Preview
+2. Current yaw heading relative to calibrated pose
+3. Current elevation relative to takeoff height
+4. Current aircraft velocity as reported by sensor
+5. Current position of aircraft in local coordinates, as estimated by integrating the velocity values
+6. Current values being sent to the Virtual Stick interface. 
+7. Current GPS location if available
+8. Current state of the current mission, and current event
+9. User controls
+..* Calibrate : Stores the current yaw heading and altitude as zero values
+..* Mission Load : Reads a mission from the local HTTP server
+..* Mission Start : Starts running the loaded mission
+..* Mission Stop : Stops playing the current mission
+..* Enable Virtual Stick : The aircraft will respond to Virtual Stick commands. Most physical controller functions will not work. 
+..* Disable Virtual Stick : The aircraft will ignore movement commands from the app, the physical controller will become functional again. Use as a non-emergency stop if the aircraft is not moving correctly. 
+..* Take Off : Aircraft will take off and hover at 1 meter
+10. Overview of the currently loaded mission
 
 
 
 ### Local Mission JSON Format
-A mission file consists of a mission name and an array of event objects. Each event object consists of a type, and one or two data arguments specifying the event. For a full example of all currently implemented event types, see [test_complete.json](missions/test_complete.json).
+A mission file consists of a mission name and an array of event objects. Each event object consists of a type, and one or two data arguments specifying the event. For a full example of all currently implemented event types, see [test_complete.json](missions/test_complete.json). This mission flies the aircraft in a small square while taking pictures facing the center point. 
 
 ~~~json
 {
@@ -31,18 +59,23 @@ A mission file consists of a mission name and an array of event objects. Each ev
 #### Event Types
 
 ##### GO_TO
+data0 : X Coordinate
+data1 : Y Coordinate
 
 Flies the aircraft in a straight line to the local coordinates (meters) described in data0 and data1. Does not change the yaw heading. Standard speed is at 1m/s. 
 
 ##### ALTITUDE
+data0 : Aircraft altitude in meters
 
 Sets the current altitude of the aircraft (meters). Note this is currently measured using the internal barometer, relative to the altitude measured during calibration. . 
 
 ##### AIM_AT
+data0 : Aircraft yaw heading in degrees
 
 Sets the yaw heading of the aircraft in degrees, relative to the heading set during calibration. Valid values are from -180 to 180, values increasing clockwise. 
 
 ##### GIMBAL
+data0 : Gimbal pitch angle in degrees
 
 Sets the pitch angle of the camera gimbal in degrees, relative to 0° pointing forward. Valid values range from -90° (down) to 30°(slightly up). 
 
