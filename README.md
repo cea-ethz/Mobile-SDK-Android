@@ -24,8 +24,9 @@ To immediately stop the aircraft while playing a mission, move the mode switch o
 
 
 
-### Interface
-![Interface](docs/images/interface_annotated.png)
+### App Interface
+<img src="docs/images/interface_annotated.png" alt="Interface" width="600">
+
 1. Camera Preview
 2. Current yaw heading relative to calibrated pose
 3. Current elevation relative to takeoff height
