@@ -6,7 +6,7 @@ The Local Mission modules performs flights in non-gps environments. It uses the 
 
 Missions should be exported from planning software as a JSON file, using the format outlined below. 
 
-The Android app loads missions over HTTP, within a local network or hotspot created by the mobile device. This has been tested with the [LocalHTTPMission](https://github.com/cea-ethz/LocalHTTPMission) tool. The tool serves the last JSON file dropped onto its window, on the listed IP address. 
+The Android app loads missions over HTTP, within a local network or hotspot created by the mobile device. This has been tested with the [LocalHTTPMission](https://github.com/cea-ethz/LocalHTTPMission) tool. The tool serves the last JSON file dropped onto its window, on the listed IP address.   
 ![Mission Server](docs/images/mission_server.png)
 
 ## Playing a standard mission
