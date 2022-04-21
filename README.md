@@ -4,11 +4,15 @@
 
 The Local Mission modules performs flights in non-gps environments. It uses the Virtual Stick system to send direct movement controls to the aircraft. 
 
-Missions should be exported from a planning software in as a JSON file, using the format outlined below. 
+Missions should be exported from planning software as a JSON file, using the format outlined below. 
 
 The Android app loads missions over HTTP, within a local network or hotspot created by the mobile device. This has been tested with the [LocalHTTPMission](https://github.com/cea-ethz/LocalHTTPMission) tool. The tool serves the last JSON file dropped onto its window, on the listed IP address. 
+![Mission Server](docs/images/mission_server.png)
 
 ## Playing a standard mission
+- Ensure the mission planning laptop and mobile device are on the same local network
+- Run the LocalHTTPMission tool and drop the desired json file onto its window
+- Ensure the laptop IP address is known to the app (this is currently hardcoded, planned feature to read this from QR code)
 - Set the aircraft on the landing platform facing the local '0' angle. 
 - Press 'Calibrate' to store this angle and altitude
 - Press 'Mission Load' to read a mission from the laptop
@@ -18,8 +22,10 @@ The Android app loads missions over HTTP, within a local network or hotspot crea
 
 To immediately stop the aircraft while playing a mission, move the mode switch on the left side of the physical controller out of the P position - this will cause the aircraft to hover. 
 
+
+
 ### Interface
-[Interface](docs/images/interface_annotated.png)
+![Interface](docs/images/interface_annotated.png)
 1. Camera Preview
 2. Current yaw heading relative to calibrated pose
 3. Current elevation relative to takeoff height
@@ -29,13 +35,13 @@ To immediately stop the aircraft while playing a mission, move the mode switch o
 7. Current GPS location if available
 8. Current state of the current mission, and current event
 9. User controls
-..* Calibrate : Stores the current yaw heading and altitude as zero values
-..* Mission Load : Reads a mission from the local HTTP server
-..* Mission Start : Starts running the loaded mission
-..* Mission Stop : Stops playing the current mission
-..* Enable Virtual Stick : The aircraft will respond to Virtual Stick commands. Most physical controller functions will not work. 
-..* Disable Virtual Stick : The aircraft will ignore movement commands from the app, the physical controller will become functional again. Use as a non-emergency stop if the aircraft is not moving correctly. 
-..* Take Off : Aircraft will take off and hover at 1 meter
+    * Calibrate : Stores the current yaw heading and altitude as zero values
+    * Mission Load : Reads a mission from the local HTTP server
+    * Mission Start : Starts running the loaded mission
+    * Mission Stop : Stops playing the current mission
+    * Enable Virtual Stick : The aircraft will respond to Virtual Stick commands. Most physical controller functions will not work. 
+    * Disable Virtual Stick : The aircraft will ignore movement commands from the app, the physical controller will become functional again. Use as a non-emergency stop if the aircraft is not moving correctly. 
+    * Take Off : Aircraft will take off and hover at 1 meter
 10. Overview of the currently loaded mission
 
 
@@ -59,8 +65,8 @@ A mission file consists of a mission name and an array of event objects. Each ev
 #### Event Types
 
 ##### GO_TO
-data0 : X Coordinate
-data1 : Y Coordinate
+data0 : X Coordinate  
+data1 : Y Coordinate  
 
 Flies the aircraft in a straight line to the local coordinates (meters) described in data0 and data1. Does not change the yaw heading. Standard speed is at 1m/s. 
 
