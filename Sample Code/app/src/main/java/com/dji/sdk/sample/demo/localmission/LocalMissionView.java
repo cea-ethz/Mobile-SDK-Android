@@ -145,9 +145,11 @@ public class LocalMissionView extends RelativeLayout
 
 
     private void init(Context context) {
+        System.out.println("aye");
         LayoutInflater layoutInflater = (LayoutInflater) context.getSystemService(Service.LAYOUT_INFLATER_SERVICE);
+        System.out.println("bee!");
         layoutInflater.inflate(R.layout.view_local_mission, this, true);
-
+        System.out.println("sea!");
         initUI();
     }
 

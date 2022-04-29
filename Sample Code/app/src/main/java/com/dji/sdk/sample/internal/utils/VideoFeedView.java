@@ -1,7 +1,9 @@
 package com.dji.sdk.sample.internal.utils;
 
 import android.content.Context;
+import android.graphics.ImageFormat;
 import android.graphics.Matrix;
+import android.media.ImageReader;
 import android.util.AttributeSet;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -81,7 +83,6 @@ public class VideoFeedView extends SurfaceView {
 
             @Override
             public void surfaceChanged(@NonNull SurfaceHolder surfaceHolder, int format, int width, int height) {
-
             }
 
             @Override
