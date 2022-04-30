@@ -18,11 +18,21 @@
             android:visibility="visible"
             android:layout_marginBottom="10dp"/>
 
+        <ImageView
+            android:id="@+id/preview_imageview"
+            android:layout_width="360dp"
+            android:layout_height="180dp"
+            android:layout_below="@id/livestream_preview_sf"
+            android:layout_centerHorizontal="true"
+            android:layout_gravity="center"
+            android:layout_marginBottom="10dp"
+            android:visibility="visible" />
+
         <TextureView
             android:id="@+id/livestream_preview_ttv"
             android:layout_width="360dp"
             android:layout_height="180dp"
-            android:layout_below="@id/livestream_preview_sf"
+            android:layout_below="@id/preview_imageview"
             android:layout_centerInParent="true"
             android:layout_gravity="center"
             android:alpha="50"

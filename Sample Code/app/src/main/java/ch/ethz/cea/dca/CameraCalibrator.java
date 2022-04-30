@@ -93,7 +93,10 @@ public class CameraCalibrator{
 	}
 	
 	public void release(){
-		ids.release();
+		if (ids != null) {
+			ids.release();
+		}
+
 		allIdsConcatenated.release();
 		markerCounterPerFrame.release();
 	}
@@ -148,6 +151,7 @@ public class CameraCalibrator{
 	}
 	
 	private void detectMarkers(Mat rgb, Mat gray){
+		System.out.println("detectMarkers");
 		ids = new MatOfInt();
 		
 		corners.clear();
