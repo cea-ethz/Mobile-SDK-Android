@@ -1,0 +1,8 @@
+{
+	"mission_name": "align test",
+	"events": [
+		{
+			"type": "ALIGN"
+		}
+	]
+}

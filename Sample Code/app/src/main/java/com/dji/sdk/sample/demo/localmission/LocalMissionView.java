@@ -472,7 +472,6 @@ public class LocalMissionView extends RelativeLayout
 
         // Execute on current mission event
         LocalMissionEvent lmEvent = localMission.getCurrentEvent();
-        System.out.println(lmEvent.eventState);
         switch(lmEvent.eventType) {
             case GO_TO:
                 eventGOTO(lmEvent);
@@ -615,7 +614,6 @@ public class LocalMissionView extends RelativeLayout
     }
 
     private void eventALIGN(LocalMissionEvent event) {
-        // First Tick
         if (event.eventState == LocalMissionEventState.START) {
             Gimbal gimbal = getGimbalInstance();
             if (gimbal == null) {
@@ -637,24 +635,65 @@ public class LocalMissionView extends RelativeLayout
             event.eventState = LocalMissionEventState.RUNNING;
         }
         else if (event.eventState == LocalMissionEventState.RUNNING) {
-            int[] idsArray = ids.toArray();
-            if (idsArray.length > 0) {
+            if (corners.size() > 0) {
+                int imgWidth = bm.getWidth();
+                int imgHeight = bm.getHeight();
 
+                int w2 =  imgWidth / 2;
+                int h2 = imgHeight / 2;
+
+                float xTotal = 0;
+                float yTotal = 0;
+
+                // TODO: Only if we have opposing markers...
+                // TODO: replace this with vectors
+                for (Mat rect : corners) {
+                    for (int i = 0; i < 4; i++) {
+                        double[] corner = rect.get(0,i);
+                        xTotal += corner[0];
+                        yTotal += corner[1];
+                    }
+                }
+
+                xTotal /= corners.size() * 4;
+                yTotal /= corners.size() * 4;
+
+                System.out.println(corners.size() + " tags found");
+
+                Vector3f diffVector = new Vector3f(xTotal - w2, h2 - yTotal,0);
+
+                System.out.println(diffVector.x + " : " + diffVector.y);
+
+
+                // Roughly over target, exit alignment
+                //TODO: Tune this number
+                if (diffVector.length() < 50) {
+                    vstickPitchRollLocal.x = 0;
+                    vstickPitchRollLocal.y = 0;
+                    positionEstimatedGlobal.x = 0;
+                    positionEstimatedGlobal.y = 0;
+                    System.out.println("Alignment Finished");
+                    event.eventState = LocalMissionEventState.FINISHED;
+
+                }
+                // Perform alignment
+                else {
+                    diffVector.normalize();
+                    diffVector.scale(1);
+
+                    Matrix3f droneToLocalMatrix = getRotationMatrix(-yawLocal);
+
+                    droneToLocalMatrix.transform(diffVector);
+                    //transformLocalToGlobal.transform(diffVector);
+
+                    vstickPitchRollLocal.x = diffVector.x;
+                    vstickPitchRollLocal.y = diffVector.y;
+                }
+            }
+            else {
+                // TODO: If no markers for n frames -> ?
             }
         }
-        // If no markers for n frames -> ?
-
-        // If we have opposing markers
-        // Get averaged center (corner order is clockwise)
-
-        // Get diff
-
-        // Set to vstick
-
-        // If diff is close enough to zero
-        // Reset estimated position
-        // Exit event
-
     }
 
 
@@ -777,17 +816,17 @@ public class LocalMissionView extends RelativeLayout
     public void calibrate(float calibrationAngle) {
         calibratedYaw = calibrationAngle;
         float aR = (float)Math.toRadians(calibratedYaw);
-        transformLocalToGlobal = new Matrix3f(
-                (float)Math.cos(aR), (float)-Math.sin(aR),0,
-                (float)Math.sin(aR), (float)Math.cos(aR),0,
-                0,0,1);
-
-        transformGlobalToLocal = new Matrix3f(
-                (float)Math.cos(-aR), (float)-Math.sin(-aR),0,
-                (float)Math.sin(-aR), (float)Math.cos(-aR),0,
-                0,0,1);
-
+        transformLocalToGlobal = getRotationMatrix(aR);
+        transformGlobalToLocal = getRotationMatrix(-aR);
         calibratedBarometerAltitude = barometerAltitudeRaw;
+    }
+
+    private Matrix3f getRotationMatrix(float angle) {
+        Matrix3f output = new Matrix3f(
+                (float)Math.cos(angle), (float)-Math.sin(angle),0,
+                (float)Math.sin(angle), (float)Math.cos(angle),0,
+                0,0,1);
+        return(output);
     }
 
 
@@ -931,14 +970,18 @@ public class LocalMissionView extends RelativeLayout
         //System.out.println("Image Width : " + image.getWidth());
         //System.out.println("Image Height : " + image.getHeight());
 
+        ids = new MatOfInt();
+        corners.clear();
+
+        // Cut out here if we only run the rest during ALIGN
+
         Mat matRGB = new Mat(image.getHeight(), image.getWidth(), CvType.CV_8UC3);
         Utils.bitmapToMat(image,matRGB);
         Imgproc.cvtColor(matRGB,matRGB,Imgproc.COLOR_RGBA2RGB);
         Mat matGRAY =  new Mat(image.getHeight(), image.getWidth(), CvType.CV_8UC1);
         Imgproc.cvtColor(matRGB,matGRAY,Imgproc.COLOR_RGB2GRAY);
 
-        ids = new MatOfInt();
-        corners.clear();
+
 
         Aruco.detectMarkers(matGRAY, dictionary, corners, ids, parameters);
 
@@ -946,15 +989,15 @@ public class LocalMissionView extends RelativeLayout
             Aruco.drawDetectedMarkers(matRGB, corners, ids);
 
             Mat corner0 = corners.get(0);
-            System.out.println(corners.size());
-            System.out.println(corners.get(0).rows());
-            System.out.println(corners.get(0).cols());
+            //System.out.println(corners.size());
+            //System.out.println(corners.get(0).rows());
+            //System.out.println(corners.get(0).cols());
             String out = "";
             for (Double d : corner0.get(0,0)) {
                 out += d;
                 out += ", ";
             }
-            System.out.println(ids.get(0,0)[0] + " " + out);
+            //System.out.println(ids.get(0,0)[0] + " " + out);
 
             rvecs = new Mat();
             tvecs = new Mat();
