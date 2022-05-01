@@ -95,6 +95,8 @@ dependencies {
         //exclude module: 'fly-safe-database'
     })
     implementation project(path: ':opencv344-contrib')
+    implementation 'org.rajawali3d:rajawali:1.1.970'
+
     compileOnly 'com.dji:dji-sdk-provided:4.16.1'
 
     implementation 'androidx.appcompat:appcompat:1.0.0'

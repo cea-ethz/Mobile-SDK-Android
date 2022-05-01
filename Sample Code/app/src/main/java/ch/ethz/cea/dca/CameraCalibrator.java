@@ -151,7 +151,6 @@ public class CameraCalibrator{
 	}
 	
 	private void detectMarkers(Mat rgb, Mat gray){
-		System.out.println("detectMarkers");
 		ids = new MatOfInt();
 		
 		corners.clear();

@@ -20,15 +20,38 @@
                 android:id="@+id/primary_video_feed"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:layout_gravity="center"/>
+                android:layout_gravity="center"
+                android:visibility="invisible"/>
 
             <View
                 android:id="@+id/primary_cover_view"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:background="@color/black"
-                android:visibility="visible"/>
+                android:visibility="invisible"/>
         </FrameLayout>
+
+
+
+        <TextureView
+            android:id="@+id/aruco_dummy_textureview"
+            android:layout_width="360dp"
+            android:layout_height="180dp"
+            android:layout_centerHorizontal="true"
+            android:layout_gravity="center"
+            android:layout_alignTop="@id/video_feed_frame"
+            android:alpha="50"
+            android:visibility="visible" />
+
+        <ImageView
+            android:id="@+id/aruco_preview_imageview"
+            android:layout_width="360dp"
+            android:layout_height="180dp"
+            android:layout_centerHorizontal="true"
+            android:layout_gravity="center"
+            android:layout_marginBottom="10dp"
+            android:layout_alignTop="@id/video_feed_frame"
+            android:visibility="visible" />
 
         <ScrollView
             android:id="@+id/lm_list_scroll"

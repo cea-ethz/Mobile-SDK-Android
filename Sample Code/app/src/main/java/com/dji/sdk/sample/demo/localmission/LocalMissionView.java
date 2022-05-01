@@ -2,10 +2,14 @@ package com.dji.sdk.sample.demo.localmission;
 
 import android.app.Service;
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.SurfaceTexture;
 import android.os.Handler;
 import android.os.Looper;
 import android.view.LayoutInflater;
+import android.view.TextureView;
 import android.view.View;
+import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
@@ -24,6 +28,8 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.text.DecimalFormat;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -40,11 +46,13 @@ import dji.common.flightcontroller.virtualstick.*;
 import dji.common.gimbal.GimbalState;
 import dji.common.gimbal.Rotation;
 import dji.common.gimbal.RotationMode;
+import dji.common.product.Model;
 import dji.common.util.CommonCallbacks;
 
 import dji.sdk.base.BaseProduct;
 import dji.sdk.camera.Camera;
 import dji.sdk.camera.VideoFeeder;
+import dji.sdk.codec.DJICodecManager;
 import dji.sdk.flightcontroller.Compass;
 import dji.sdk.flightcontroller.FlightController;
 import dji.sdk.gimbal.Gimbal;
@@ -55,8 +63,22 @@ import dji.sdk.sdkmanager.DJISDKManager;
 
 import static com.google.android.gms.internal.zzahn.runOnUiThread;
 
+import org.opencv.android.BaseLoaderCallback;
+import org.opencv.android.LoaderCallbackInterface;
+import org.opencv.android.OpenCVLoader;
+import org.opencv.android.Utils;
+import org.opencv.aruco.Aruco;
+import org.opencv.aruco.DetectorParameters;
+import org.opencv.aruco.Dictionary;
+import org.opencv.core.CvType;
+import org.opencv.core.Mat;
+import org.opencv.core.MatOfInt;
+import org.opencv.imgproc.Imgproc;
+
 import javax.vecmath.Matrix3f;
 import javax.vecmath.Vector3f;
+
+
 
 public class LocalMissionView extends RelativeLayout
         implements View.OnClickListener, PresentableView {
@@ -74,6 +96,7 @@ public class LocalMissionView extends RelativeLayout
 
     // Hardware objects
     private Camera camera;
+    private Camera mCamera;
     private Gimbal gimbal = null;
     private Compass compass;
 
@@ -111,6 +134,10 @@ public class LocalMissionView extends RelativeLayout
     private VideoFeeder.PhysicalSourceListener sourceListener;
     private View primaryCoverView;
 
+    // Aruco surfaces
+    private TextureView arucoDummyTextureView;
+    private ImageView arucoPreviewImageView;
+
     // Timing for sending commands via the Virtual Stick interface
     private Timer sendVirtualStickDataTimer;
     private SendVirtualStickDataTask sendVirtualStickDataTask;
@@ -128,10 +155,39 @@ public class LocalMissionView extends RelativeLayout
     // Helper to track that the Vstick sending function is being called correctly, remove eventually
     private int updateCount = 0;
 
+    private Mat cameraMatrix;
+    private Mat distCoeffs;
+
+    private Context context;
+
+    private boolean openCVLoaded = false;
+
+    private BaseLoaderCallback loaderCallback;
+
+    private DJICodecManager mCodecManager;
+
+    protected VideoFeeder.VideoDataListener mReceivedVideoDataListener = null;
+
+    private long lastupdate;
+
+    private Mat rvecs;
+    private Mat tvecs;
+
+    private MatOfInt ids;
+    private List<Mat> corners;
+    private Dictionary dictionary;
+    private DetectorParameters parameters;
+
+    private Renderer3D renderer;
+
+    private Bitmap bm;
+
 
     public LocalMissionView(Context context) {
         super(context);
         init(context);
+
+        this.context = context;
 
         positionEstimatedLocal = new Vector3f();
         positionEstimatedGlobal = new Vector3f();
@@ -141,16 +197,30 @@ public class LocalMissionView extends RelativeLayout
         currentVelocityLocal = new Vector3f();
         currentVelocityGlobal = new Vector3f();
         calibrate(0);
+
+        loaderCallback = new BaseLoaderCallback(context){
+            @Override
+            public void onManagerConnected(int status){
+                if(status == LoaderCallbackInterface.SUCCESS){
+                    openCVLoaded = true;
+                    loadCameraParams();
+                }
+                else {
+                    super.onManagerConnected(status);
+                }
+            }
+        };
+
+
     }
 
 
     private void init(Context context) {
-        System.out.println("aye");
         LayoutInflater layoutInflater = (LayoutInflater) context.getSystemService(Service.LAYOUT_INFLATER_SERVICE);
-        System.out.println("bee!");
         layoutInflater.inflate(R.layout.view_local_mission, this, true);
-        System.out.println("sea!");
         initUI();
+
+        initPreviewerTextureView(context);
     }
 
 
@@ -159,6 +229,9 @@ public class LocalMissionView extends RelativeLayout
         primaryCoverView = findViewById(R.id.primary_cover_view);
         primaryVideoFeed = (VideoFeedView) findViewById(R.id.primary_video_feed);
         primaryVideoFeed.setCoverView(primaryCoverView);
+
+        arucoDummyTextureView = findViewById(R.id.aruco_dummy_textureview);
+        arucoPreviewImageView = findViewById(R.id.aruco_preview_imageview);
 
         // Flight info text displays
         textViewListenerHeading = (TextView) findViewById(R.id.text_pose_real);
@@ -185,7 +258,14 @@ public class LocalMissionView extends RelativeLayout
         super.onAttachedToWindow();
         setUpListeners();
 
+        if(OpenCVLoader.initDebug()) {
+            loaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS);
+        }
+        else {
+            //Toast.makeText(this, getString(R.string.error_native_lib), Toast.LENGTH_LONG).show();
+        }
 
+        notifyStatusChange();
     }
 
 
@@ -226,7 +306,7 @@ public class LocalMissionView extends RelativeLayout
             });
         }
 
-
+        // Receive : Video Feed
         sourceListener = new VideoFeeder.PhysicalSourceListener() {
             @Override
             public void onChange(VideoFeeder.VideoFeed videoFeed, PhysicalSource newPhysicalSource) {
@@ -234,6 +314,7 @@ public class LocalMissionView extends RelativeLayout
         };
         setVideoFeederListeners(true);
 
+        // Receive: System State
         //Camera camera = DJISampleApplication.getProductInstance().getCamera();
         camera.setSystemStateCallback(new SystemState.Callback() {
             @Override
@@ -289,18 +370,21 @@ public class LocalMissionView extends RelativeLayout
 
     private void setVideoFeederListeners(boolean isOpen) {
         if (VideoFeeder.getInstance() == null) return;
-
+        /*
         final BaseProduct product = DJISDKManager.getInstance().getProduct();
         if (product != null) {
             VideoFeeder.VideoDataListener primaryVideoDataListener =
                     primaryVideoFeed.registerLiveVideo(VideoFeeder.getInstance().getPrimaryVideoFeed(), true);
             if (isOpen) {
                 VideoFeeder.getInstance().addPhysicalSourceListener(sourceListener);
+
             } else {
                 VideoFeeder.getInstance().removePhysicalSourceListener(sourceListener);
                 VideoFeeder.getInstance().getPrimaryVideoFeed().removeVideoDataListener(primaryVideoDataListener);
             }
         }
+        */
+
     }
 
 
@@ -405,6 +489,7 @@ public class LocalMissionView extends RelativeLayout
                 eventALTITUDE(lmEvent);
                 break;
             case ALIGN:
+                eventALIGN(lmEvent);
                 break;
             default:
                 System.out.println("Unhandled event type : " + lmEvent.eventType);
@@ -529,6 +614,49 @@ public class LocalMissionView extends RelativeLayout
         // Otherwise wait while aircraft changes altitude
     }
 
+    private void eventALIGN(LocalMissionEvent event) {
+        // First Tick
+        if (event.eventState == LocalMissionEventState.START) {
+            Gimbal gimbal = getGimbalInstance();
+            if (gimbal == null) {
+                return;
+            }
+
+            Rotation.Builder builder = new Rotation.Builder().mode(RotationMode.ABSOLUTE_ANGLE).time(0.5);
+            builder.pitch(-90);
+
+            gimbal.rotate(builder.build(), new CommonCallbacks.CompletionCallback() {
+                @Override
+                public void onResult(DJIError djiError) {
+                }
+            });
+
+            // Start using textureview if we havne't beent
+            // Start doing aruco analyis if we ahven't been
+
+            event.eventState = LocalMissionEventState.RUNNING;
+        }
+        else if (event.eventState == LocalMissionEventState.RUNNING) {
+            int[] idsArray = ids.toArray();
+            if (idsArray.length > 0) {
+
+            }
+        }
+        // If no markers for n frames -> ?
+
+        // If we have opposing markers
+        // Get averaged center (corner order is clockwise)
+
+        // Get diff
+
+        // Set to vstick
+
+        // If diff is close enough to zero
+        // Reset estimated position
+        // Exit event
+
+    }
+
 
     @Override
     public void onClick(View v) {
@@ -599,8 +727,8 @@ public class LocalMissionView extends RelativeLayout
 
     private void loadMission() {
         //TODO: Make this not hardcoded
-        //String urlString = "http://192.168.0.164:8000/mission.json"; // Wifi
-        String urlString = "http://192.168.80.121:8000/mission.json"; // Hotspot
+        String urlString = "http://192.168.0.164:8000/mission.json"; // Wifi
+        //String urlString = "http://192.168.80.121:8000/mission.json"; // Hotspot
 
         try {
             HttpURLConnection urlConnection = null;
@@ -751,5 +879,192 @@ public class LocalMissionView extends RelativeLayout
             input -= 360;
         }
         return(input);
+    }
+
+    private boolean loadCameraParams(){
+        cameraMatrix = Mat.eye(3, 3, CvType.CV_64FC1);
+        distCoeffs = Mat.zeros(5, 1, CvType.CV_64FC1);
+
+        System.out.println("Loaded Camera Params:");
+        System.out.println(cameraMatrix);
+        System.out.println(distCoeffs);
+
+        return CameraParameters.tryLoad(context, cameraMatrix, distCoeffs);
+    }
+
+    private void initPreviewerTextureView(Context context) {
+        bm = Bitmap.createBitmap(990,495,Bitmap.Config.ARGB_8888);
+        arucoDummyTextureView.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
+            @Override
+            public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
+                if (mCodecManager == null) {
+                    mCodecManager = new DJICodecManager(context, surface, width, height);
+                    System.out.println("Codec manager : " + mCodecManager);
+                    //For M300RTK, you need to actively request an I frame.
+                    mCodecManager.resetKeyFrame();
+                }
+            }
+
+            @Override
+            public void onSurfaceTextureSizeChanged(SurfaceTexture surface, int width, int height) {
+            }
+
+            @Override
+            public boolean onSurfaceTextureDestroyed(SurfaceTexture surface) {
+                if (mCodecManager != null) {
+                    mCodecManager.cleanSurface();
+                }
+                return false;
+            }
+
+            @Override
+            public void onSurfaceTextureUpdated(SurfaceTexture surface) {
+                Bitmap image = arucoDummyTextureView.getBitmap();
+                handleImageData(image);
+            }
+        });
+    }
+
+    private void handleImageData(Bitmap image) {
+        //rgb = new Mat(720,1280, CvType.CV_8UC3);
+
+        //System.out.println("Image Width : " + image.getWidth());
+        //System.out.println("Image Height : " + image.getHeight());
+
+        Mat matRGB = new Mat(image.getHeight(), image.getWidth(), CvType.CV_8UC3);
+        Utils.bitmapToMat(image,matRGB);
+        Imgproc.cvtColor(matRGB,matRGB,Imgproc.COLOR_RGBA2RGB);
+        Mat matGRAY =  new Mat(image.getHeight(), image.getWidth(), CvType.CV_8UC1);
+        Imgproc.cvtColor(matRGB,matGRAY,Imgproc.COLOR_RGB2GRAY);
+
+        ids = new MatOfInt();
+        corners.clear();
+
+        Aruco.detectMarkers(matGRAY, dictionary, corners, ids, parameters);
+
+        if(corners.size()>0){
+            Aruco.drawDetectedMarkers(matRGB, corners, ids);
+
+            Mat corner0 = corners.get(0);
+            System.out.println(corners.size());
+            System.out.println(corners.get(0).rows());
+            System.out.println(corners.get(0).cols());
+            String out = "";
+            for (Double d : corner0.get(0,0)) {
+                out += d;
+                out += ", ";
+            }
+            System.out.println(ids.get(0,0)[0] + " " + out);
+
+            rvecs = new Mat();
+            tvecs = new Mat();
+
+            /*
+            Aruco.estimatePoseSingleMarkers(corners, 0.04f, cameraMatrix, distCoeffs, rvecs, tvecs);
+            for(int i = 0;i<ids.toArray().length;i++){
+                transformModel(tvecs.row(0), rvecs.row(0));
+                Aruco.drawAxis(matRGB, cameraMatrix, distCoeffs, rvecs.row(i), tvecs.row(i), 0.02f);
+            }
+
+             */
+
+            arucoPreviewImageView.setVisibility(VISIBLE);
+
+            Utils.matToBitmap(matRGB,bm);
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    arucoPreviewImageView.setImageBitmap(bm);
+                }
+            });
+
+
+        }
+        else {
+            arucoPreviewImageView.setVisibility(INVISIBLE);
+        }
+
+
+    }
+
+    private void notifyStatusChange() {
+
+        final BaseProduct product = VideoDecodingApplication.getProductInstance();
+
+        // The callback for receiving the raw H264 video data for camera live view
+        mReceivedVideoDataListener = new VideoFeeder.VideoDataListener() {
+
+            @Override
+            public void onReceive(byte[] videoBuffer, int size) {
+                if (System.currentTimeMillis() - lastupdate > 1000) {
+                    lastupdate = System.currentTimeMillis();
+                }
+                if (mCodecManager != null) {
+                    mCodecManager.sendDataToDecoder(videoBuffer, size);
+                }
+                else {
+                    System.out.println("Codec Manager is null! >:O");
+                }
+
+            }
+        };
+
+        if (null == product || !product.isConnected()) {
+            mCamera = null;
+        } else {
+            if (!product.getModel().equals(Model.UNKNOWN_AIRCRAFT)) {
+                mCamera = product.getCamera();
+                /*
+                if (mCamera != null) {
+                    if (mCamera.isFlatCameraModeSupported()) {
+                        mCamera.setFlatMode(SettingsDefinitions.FlatCameraMode.PHOTO_SINGLE, new CommonCallbacks.CompletionCallback() {
+                            @Override
+                            public void onResult(DJIError djiError) {
+                                if(djiError!=null){
+                                }
+                            }
+                        });
+                    } else {
+                        mCamera.setMode(SettingsDefinitions.CameraMode.SHOOT_PHOTO, new CommonCallbacks.CompletionCallback() {
+                            @Override
+                            public void onResult(DJIError djiError) {
+                                if (djiError != null) {
+                                }
+                            }
+                        });
+                    }
+                }
+                */
+
+
+                if (VideoFeeder.getInstance().getPrimaryVideoFeed() != null) {
+                    System.out.println("Added video listener");
+                    VideoFeeder.getInstance().getPrimaryVideoFeed().addVideoDataListener(mReceivedVideoDataListener);
+                }
+
+            }
+        }
+
+        // Aruco setup
+        corners = new LinkedList<>();
+        parameters = DetectorParameters.create();
+        dictionary = Aruco.getPredefinedDictionary(Aruco.DICT_6X6_50);
+    }
+
+    private void transformModel(final Mat tvec, final Mat rvec){
+        runOnUiThread(new Runnable(){
+            @Override
+            public void run(){
+                renderer.transform(
+                        tvec.get(0, 0)[0]*50,
+                        -tvec.get(0, 0)[1]*50,
+                        -tvec.get(0, 0)[2]*50,
+
+                        rvec.get(0, 0)[2], //yaw
+                        rvec.get(0, 0)[1], //pitch
+                        rvec.get(0, 0)[0] //roll
+                );
+            }
+        });
     }
 }

@@ -1,5 +1,7 @@
 package com.dji.sdk.sample.demo.localmission;
 
+import android.app.Activity;
+import android.app.ProgressDialog;
 import android.app.Service;
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -12,6 +14,7 @@ import android.view.TextureView;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 
@@ -34,6 +37,7 @@ import org.opencv.imgproc.Imgproc;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
+import ch.ethz.cea.dca.CalibrationResult;
 import ch.ethz.cea.dca.CameraCalibrator;
 import dji.common.camera.SettingsDefinitions;
 import dji.common.camera.SystemState;
@@ -84,6 +88,8 @@ public class ArucoCalibrationView extends RelativeLayout
 
     private boolean openCVLoaded = false;
 
+    private Context context;
+
 
 
     private enum DemoType { USE_TEXTURE_VIEW, USE_SURFACE_VIEW, USE_SURFACE_VIEW_DEMO_DECODER}
@@ -121,8 +127,10 @@ public class ArucoCalibrationView extends RelativeLayout
         layoutInflater.inflate(R.layout.view_aruco_calibration, this, true);
 
         initUI();
-        //taking hte place of onResume here?
+
         initSurfaceOrTextureView(context, this);
+
+        this.context = context;
     }
 
     private void initUI() {
@@ -148,15 +156,10 @@ public class ArucoCalibrationView extends RelativeLayout
             //Toast.makeText(this, getString(R.string.error_native_lib), Toast.LENGTH_LONG).show();
         }
 
-
         calibrator = new CameraCalibrator(360, 180);
         calibrator.setOnAddFrameListener(this);
 
-
-
-        notifyStatusChange(this);
-
-
+        notifyStatusChange();
     }
 
 
@@ -225,7 +228,48 @@ public class ArucoCalibrationView extends RelativeLayout
                 break;
 
             case R.id.btn_aruco_calibrate:
+                if(!calibrator.canCalibrate()){
+                    Toast.makeText(context, "Add More Frames", Toast.LENGTH_SHORT).show();
+                }
 
+                new AsyncTask<Void,Void,Void>(){
+                    private double error=0;
+                    private ProgressDialog progress;
+
+                    @Override
+                    protected void onPreExecute(){
+                        progress = new ProgressDialog(context);
+                        progress.setTitle("Calibrating");
+                        progress.setMessage("Please Wait");
+                        progress.setCancelable(false);
+                        progress.setIndeterminate(true);
+                        progress.show();
+                    }
+
+                    @Override
+                    protected Void doInBackground(Void... arg0){
+                        error = calibrator.calibrate();
+                        return null;
+                    }
+
+                    @Override
+                    protected void onPostExecute(Void result){
+                        progress.dismiss();
+                        calibrator.clear();
+
+                        Activity activity = (Activity) context;
+
+                        CalibrationResult.save(
+                                activity,
+                                calibrator.getCameraMatrix(),
+                                calibrator.getDistorsionCoefficients()
+                        );
+
+                        String resultMessage = "Calibrated with error : " + error;
+                        Toast.makeText(context, resultMessage, Toast.LENGTH_SHORT).show();
+
+                    }
+                }.execute();
                 break;
         }
     }
@@ -411,7 +455,7 @@ public class ArucoCalibrationView extends RelativeLayout
         });
     }
 
-    private void notifyStatusChange( DJICodecManager.YuvDataCallback yuvCallback) {
+    private void notifyStatusChange() {
 
         final BaseProduct product = VideoDecodingApplication.getProductInstance();
 
@@ -516,19 +560,14 @@ public class ArucoCalibrationView extends RelativeLayout
     private void handleImageData(Bitmap image) {
         //rgb = new Mat(720,1280, CvType.CV_8UC3);
 
-        System.out.println("Image Width : " + image.getWidth());
-        System.out.println("Image Height : " + image.getHeight());
+        //System.out.println("Image Width : " + image.getWidth());
+        //System.out.println("Image Height : " + image.getHeight());
 
         Mat matRGB = new Mat(image.getHeight(), image.getWidth(), CvType.CV_8UC3);
-        System.out.println("Channels : " + matRGB.channels());
         Utils.bitmapToMat(image,matRGB);
         Imgproc.cvtColor(matRGB,matRGB,Imgproc.COLOR_RGBA2RGB);
-        System.out.println("Channels : " + matRGB.channels());
         Mat matGRAY =  new Mat(image.getHeight(), image.getWidth(), CvType.CV_8UC1);
         Imgproc.cvtColor(matRGB,matGRAY,Imgproc.COLOR_RGB2GRAY);
-
-        System.out.println("Total : " + matRGB.total());
-        System.out.println("Channels : " + matRGB.channels());
         calibrator.render(matRGB,matGRAY);
 
         Utils.matToBitmap(matRGB,bm);
